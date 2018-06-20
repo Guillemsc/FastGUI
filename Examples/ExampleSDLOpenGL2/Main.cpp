@@ -7,6 +7,8 @@
 #pragma comment( lib, "Libs/SDL2/libx86/SDL2main.lib" )
 #pragma comment (lib, "opengl32.lib")
 
+#include "..\..\FastUI.h"
+
 int main(int argc, char ** argv)
 {
 	// Setup SDL
