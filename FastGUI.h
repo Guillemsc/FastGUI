@@ -3,6 +3,8 @@
 
 #include <math.h> 
 #include <string>
+#include <vector>
+#include <map>
 #include <assert.h>
 
 #define FASTGUI_VERSION "0.01"
@@ -79,14 +81,31 @@ public:
 	void operator *= (const FastVector4& vec);
 	void operator /= (const FastVector4& vec);
 
-	bool Overlaps(const FastVector4& vec);
-	bool Contains(const FastVector4& vec);
-
 public:
 	float x = 0.0f;
 	float y = 0.0f;
 	float w = 0.0f;
 	float z = 0.0f;
+};
+
+class FastRect
+{
+public:
+	FastRect(float x, float y, float w, float h);
+
+	float xw();
+	float yh();
+
+	FastVector2 Center();
+
+	bool Overlaps(FastRect rec);
+	bool Contains(FastRect rec);
+
+public:
+	float x = 0.0f;
+	float y = 0.0f;
+	float w = 0.0f;
+	float h = 0.0f;
 };
 
 namespace Fast
@@ -95,18 +114,101 @@ namespace Fast
 	void Quit();
 
 	const char* GetVersion();
+
+	void PushID(const char* id);
+	void PopID();
 }
 
 namespace FastInternal
 {
+	// Forward declarations
+	class FastIO;
+	class FastStyle;
+	class FastFonts;
+	class FastDraw;
+	class FastHash;
+	class FastElement;
+	class FastWindow;
+
+	// Main module
 	class FastMain
 	{
 	public:
 		FastMain();
 		~FastMain();
+
+		void Start();
+		void CleanUp();
+
+		FastElement* GetElement(std::string hash);
+		void PushElement(FastElement* el);
+
+		FastWindow* GetCurrWindow();
+
+	private:
+
+
+	public:
+		FastIO*    io = nullptr;
+		FastStyle* style = nullptr;
+		FastFonts* fonts = nullptr;
+		FastDraw*  draw = nullptr;
+		FastHash*  hash = nullptr;
+
+	private:
+		std::map<std::string, FastElement*> elements;
 	};
 
 	bool Inited();
+
+	class FastIO
+	{
+	public:
+		FastIO();
+		~FastIO();
+	};
+
+	class FastStyle
+	{
+	public:
+		FastStyle();
+		~FastStyle();
+	};
+
+	class FastFonts
+	{
+	public:
+		FastFonts();
+		~FastFonts();
+	};
+
+	class FastDraw
+	{
+	public:
+		 FastDraw();
+		~FastDraw();
+	};
+
+	class FastHash
+	{
+	public: 
+		FastHash();
+		~FastHash();
+	};
+
+	class FastElement
+	{
+	public:
+		FastElement();
+		~FastElement();
+	};
+
+	class FastWindow
+	{
+	public:
+		FastWindow();
+		~FastWindow();
+	};
 }
 
 namespace FastDraw

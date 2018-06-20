@@ -139,30 +139,63 @@ void FastVector4::operator/=(const FastVector4 & vec)
 		z /= vec.z;
 }
 
-bool FastVector4::Overlaps(const FastVector4 & vec)
+float FastRect::xw()
 {
+	return x + w;
+}
+
+float FastRect::yh()
+{
+	return y + h;
+}
+
+FastVector2 FastRect::Center()
+{
+	return FastVector2(x + (w * 0.5f), y + (h * 0.5f));
+}
+
+bool FastRect::Overlaps(FastRect rect)
+{
+	if (xw() > rect.x && yh() > rect.y && x < rect.xw() && y < rect.yh())
+		return true;
 	return false;
 }
 
-bool FastVector4::Contains(const FastVector4 & vec)
+bool FastRect::Contains(FastRect rec)
 {
+	if (x < rec.x && xw() > rec.xw() && y < rec.y && yh() > rec.yh())
+		return true;
 	return false;
 }
 
 void Fast::Init()
 {
-	if(fast_main != nullptr)
+	if (fast_main == nullptr)
+	{
 		fast_main = new FastInternal::FastMain();
+		fast_main->Start();
+	}
 }
 
 void Fast::Quit()
 {
+	if (fast_main != nullptr)
+		fast_main->CleanUp();
+
 	FAST_DEL(fast_main);
 }
 
 const char * Fast::GetVersion()
 {
 	return FASTGUI_VERSION;
+}
+
+void Fast::PushID(const char * id)
+{
+}
+
+void Fast::PopID()
+{
 }
 
 FastInternal::FastMain::FastMain()
@@ -173,6 +206,38 @@ FastInternal::FastMain::~FastMain()
 {
 }
 
+void FastInternal::FastMain::Start()
+{
+	io = new FastIO();
+	style = new FastStyle();
+	fonts = new FastFonts();
+	draw = new FastDraw();
+	hash = new FastHash();
+}
+
+void FastInternal::FastMain::CleanUp()
+{
+	FAST_DEL(io);
+	FAST_DEL(style);
+	FAST_DEL(fonts);
+	FAST_DEL(draw);
+	FAST_DEL(hash);
+}
+
+FastInternal::FastElement * FastInternal::FastMain::GetElement(std::string hash)
+{
+	return nullptr;
+}
+
+void FastInternal::FastMain::PushElement(FastElement * el)
+{
+}
+
+FastInternal::FastWindow * FastInternal::FastMain::GetCurrWindow()
+{
+	return nullptr;
+}
+
 bool FastInternal::Inited()
 {
 	if (fast_main == nullptr)
@@ -181,4 +246,68 @@ bool FastInternal::Inited()
 		return false;
 	}
 	return true;
+}
+
+FastRect::FastRect(float _x, float _y, float _w, float _h)
+{
+	x = _x;
+	y = _y;
+	w = _w;
+	h = _h;
+}
+
+FastInternal::FastIO::FastIO()
+{
+}
+
+FastInternal::FastIO::~FastIO()
+{
+}
+
+FastInternal::FastStyle::FastStyle()
+{
+}
+
+FastInternal::FastStyle::~FastStyle()
+{
+}
+
+FastInternal::FastElement::FastElement()
+{
+}
+
+FastInternal::FastElement::~FastElement()
+{
+}
+
+FastInternal::FastFonts::FastFonts()
+{
+}
+
+FastInternal::FastFonts::~FastFonts()
+{
+}
+
+FastInternal::FastDraw::FastDraw()
+{
+}
+
+FastInternal::FastDraw::~FastDraw()
+{
+}
+
+FastInternal::FastWindow::FastWindow()
+{
+}
+
+FastInternal::FastWindow::~FastWindow()
+{
+}
+
+FastInternal::FastHash::FastHash()
+{
+}
+
+FastInternal::FastHash::~FastHash()
+{
 }
