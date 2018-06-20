@@ -63,6 +63,8 @@ int main(int argc, char ** argv)
 	int size_x; int size_y;
 	SDL_GetWindowSize(window, &size_x, &size_y);
 
+	Fast::Init();
+
 	// Main loop
 	bool done = false;
 	while (!done)
@@ -74,7 +76,6 @@ int main(int argc, char ** argv)
 				done = true;
 		}
 
-
 		// End render
 		glViewport(0, 0, size_x, size_y);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -82,6 +83,8 @@ int main(int argc, char ** argv)
 
 		SDL_GL_SwapWindow(window);
 	}
+
+	Fast::Quit();
 
 	SDL_GL_DeleteContext(glcontext);
 	SDL_DestroyWindow(window);
