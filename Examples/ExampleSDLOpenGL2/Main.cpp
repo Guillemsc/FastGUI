@@ -63,12 +63,14 @@ int main(int argc, char ** argv)
 	int size_x; int size_y;
 	SDL_GetWindowSize(window, &size_x, &size_y);
 
-	Fast::Init();
+	FastInternal::Init();
 
 	// Main loop
 	bool done = false;
 	while (!done)
 	{
+		FastInternal::NewFrame();
+
 		SDL_Event event;
 		while (SDL_PollEvent(&event))
 		{
@@ -81,10 +83,12 @@ int main(int argc, char ** argv)
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glLoadIdentity();
 
+		FastInternal::EndFrame();
+
 		SDL_GL_SwapWindow(window);
 	}
 
-	Fast::Quit();
+	FastInternal::Quit();
 
 	SDL_GL_DeleteContext(glcontext);
 	SDL_DestroyWindow(window);

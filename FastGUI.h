@@ -37,34 +37,34 @@ typedef unsigned int uint;
 typedef unsigned char uchar;
 
 // CLASSES
-class FastVector2
+class FastVec2
 {
 public:
-	FastVector2(float x, float y);
+	FastVec2(float x, float y);
 
-	void operator += (const FastVector2& vec);
-	void operator -= (const FastVector2& vec);
-	void operator *= (const FastVector2& vec);
-	void operator /= (const FastVector2& vec);
+	void operator += (const FastVec2& vec);
+	void operator -= (const FastVec2& vec);
+	void operator *= (const FastVec2& vec);
+	void operator /= (const FastVec2& vec);
 
-	float Distance(const FastVector2& vec);
+	float Distance(const FastVec2& vec);
 
 public:
 	float x = 0.0f;
 	float y = 0.0f;
 };
 
-class FastVector3
+class FastVec3
 {
 public:
-	FastVector3(float x, float y, float z);
+	FastVec3(float x, float y, float z);
 
-	void operator += (const FastVector3& vec);
-	void operator -= (const FastVector3& vec);
-	void operator *= (const FastVector3& vec);
-	void operator /= (const FastVector3& vec);
+	void operator += (const FastVec3& vec);
+	void operator -= (const FastVec3& vec);
+	void operator *= (const FastVec3& vec);
+	void operator /= (const FastVec3& vec);
 
-	float Distance(const FastVector3& vec);
+	float Distance(const FastVec3& vec);
 
 public:
 	float x = 0.0f;
@@ -72,15 +72,15 @@ public:
 	float z = 0.0f;
 };
 
-class FastVector4
+class FastVec4
 {
 public:
-	FastVector4(float x, float y, float w, float z);
+	FastVec4(float x, float y, float w, float z);
 
-	void operator += (const FastVector4& vec);
-	void operator -= (const FastVector4& vec);
-	void operator *= (const FastVector4& vec);
-	void operator /= (const FastVector4& vec);
+	void operator += (const FastVec4& vec);
+	void operator -= (const FastVec4& vec);
+	void operator *= (const FastVec4& vec);
+	void operator /= (const FastVec4& vec);
 
 public:
 	float x = 0.0f;
@@ -97,7 +97,7 @@ public:
 	float xw();
 	float yh();
 
-	FastVector2 Center();
+	FastVec2 Center();
 
 	bool Overlaps(FastRect rec);
 	bool Contains(FastRect rec);
@@ -111,9 +111,6 @@ public:
 
 namespace Fast
 {
-	void Init();
-	void Quit();
-
 	const char* GetVersion();
 
 	void PushID(const char* id);
@@ -122,6 +119,11 @@ namespace Fast
 
 namespace FastInternal
 {
+	void Init();
+	void Quit();
+	void NewFrame();
+	void EndFrame();
+
 	// Forward declarations
 	class FastCreation;
 	class FastIO;
@@ -129,6 +131,8 @@ namespace FastInternal
 	class FastFonts;
 	class FastDraw;
 	class FastHash;
+
+	enum  FastElementType;
 	class FastElement;
 	class FastWindow;
 
@@ -142,13 +146,7 @@ namespace FastInternal
 		void Start();
 		void CleanUp();
 
-		FastElement* GetElement(std::string hash);
-		void PushElement(FastElement* el);
-
 		FastWindow* GetCurrWindow();
-
-	private:
-
 
 	public:
 		FastCreation * creation = nullptr;
@@ -159,7 +157,6 @@ namespace FastInternal
 		FastHash*      hash = nullptr;
 
 	private:
-		std::map<std::string, FastElement*> elements;
 	};
 
 	bool Inited();
@@ -170,8 +167,10 @@ namespace FastInternal
 		FastCreation();
 		~FastCreation();
 
-		void AddAliveElement(FastElement* el);
-		FastElement* GetAliveElement(std::string hash);
+		FastElement* CreateElement(std::string hash, FastInternal::FastElementType type);
+		FastElement* GetElement(std::string hash);
+
+		void SetElementAlive(std::string hash);
 		void RemoveDeadElements();
 
 		void PushID(std::string id);
@@ -180,7 +179,7 @@ namespace FastInternal
 
 	private:
 		std::map<std::string, FastElement*> elements;
-		std::map<std::string, FastElement*> alive_elements;
+		std::vector<std::string> elements_alive;
 
 
 		std::vector<std::string> ids;
@@ -207,18 +206,41 @@ namespace FastInternal
 		~FastFonts();
 	};
 
+	//-----------------------------------------------------------------------------
+	// FAST DRAW
+	//-----------------------------------------------------------------------------
+
 	class FastDraw
 	{
 	public:
 		 FastDraw();
 		~FastDraw();
+
+		void Quad(FastVec2 pos, FastVec2 size, FastVec4 colour);
 	};
 
+	class FastDrawShape
+	{
+		FastDrawShape();
+
+		void AddPoint(FastVec2 point_pos);
+		void Finish();
+		void Clear();
+
+	private:
+		std::vector<int> indices;
+		std::vector<float> vertices;
+
+		bool finished = false;
+		std::vector<FastVec2> points;
+	};
+
+	// ----------------------------------------------------------------------------
 
 	//-----------------------------------------------------------------------------
-	// Module that creates element hashes
-	// converted to C++ class by Frank Thilo(thilo@unix-ag.org)
-	// for bzflag(http:://www.bzflag.org)
+	// FAST HASH
+	// Converted to C++ class by Frank Thilo(thilo@unix-ag.org)
+	// For bzflag(http:://www.bzflag.org)
 	//-----------------------------------------------------------------------------
 
 	class FastHash
@@ -283,21 +305,39 @@ namespace FastInternal
 
 	};
 
+	// ----------------------------------------------------------------------------
+
+	enum FastElementType
+	{
+		FAST_WINDOW,
+		FAST_BUTTON,
+		FAST_TEXT,
+	};
+
 	class FastElement
 	{
 	public:
-		FastElement();
+		FastElement(std::string hash, FastElementType type);
 		~FastElement();
 
+		void CleanUp();
+
+		virtual void Draw() = 0;
+
 	private:
-		std::string hash;
+		std::string     hash;
+		FastElementType type;
+
+		bool            interactable = false;
 	};
 
-	class FastWindow
+	class FastWindow : public FastElement
 	{
 	public:
-		FastWindow();
+		FastWindow(std::string hash);
 		~FastWindow();
+
+		void Draw();
 	};
 }
 

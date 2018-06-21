@@ -2,31 +2,31 @@
 
 static FastInternal::FastMain* fast_main = nullptr;
 
-FastVector2::FastVector2(float _x, float _y)
+FastVec2::FastVec2(float _x, float _y)
 {
 	x = _x;
 	y = _y;
 }
 
-void FastVector2::operator+=(const FastVector2 & vec)
+void FastVec2::operator+=(const FastVec2 & vec)
 {
 	x += vec.x;
 	y += vec.y;
 }
 
-void FastVector2::operator-=(const FastVector2 & vec)
+void FastVec2::operator-=(const FastVec2 & vec)
 {
 	x -= vec.x;
 	y -= vec.y;
 }
 
-void FastVector2::operator*=(const FastVector2 & vec)
+void FastVec2::operator*=(const FastVec2 & vec)
 {
 	x *= vec.x;
 	y *= vec.y;
 }
 
-void FastVector2::operator/=(const FastVector2 & vec)
+void FastVec2::operator/=(const FastVec2 & vec)
 {
 	if (vec.x != 0)
 		x /= vec.x;
@@ -35,7 +35,7 @@ void FastVector2::operator/=(const FastVector2 & vec)
 		y /= vec.y;
 }
 
-float FastVector2::Distance(const FastVector2 & vec)
+float FastVec2::Distance(const FastVec2 & vec)
 {
 	float dist_x = vec.x - x;
 	float dist_y = vec.y - y;
@@ -43,35 +43,35 @@ float FastVector2::Distance(const FastVector2 & vec)
 	return sqrt(fabs((dist_x * dist_x) + (dist_y * dist_y)));
 }
 
-FastVector3::FastVector3(float _x, float _y, float _z)
+FastVec3::FastVec3(float _x, float _y, float _z)
 {
 	x = _x;
 	y = _y;
 	z = _z;
 }
 
-void FastVector3::operator+=(const FastVector3 & vec)
+void FastVec3::operator+=(const FastVec3 & vec)
 {
 	x += vec.x;
 	y += vec.y;
 	z += vec.z;
 }
 
-void FastVector3::operator-=(const FastVector3 & vec)
+void FastVec3::operator-=(const FastVec3 & vec)
 {
 	x -= vec.x;
 	y -= vec.y;
 	z -= vec.z;
 }
 
-void FastVector3::operator*=(const FastVector3 & vec)
+void FastVec3::operator*=(const FastVec3 & vec)
 {
 	x *= vec.x;
 	y *= vec.y;
 	z *= vec.z;
 }
 
-void FastVector3::operator/=(const FastVector3 & vec)
+void FastVec3::operator/=(const FastVec3 & vec)
 {
 	if (vec.x != 0)
 		x /= vec.x;
@@ -83,7 +83,7 @@ void FastVector3::operator/=(const FastVector3 & vec)
 		z /= vec.z;
 }
 
-float FastVector3::Distance(const FastVector3 & vec)
+float FastVec3::Distance(const FastVec3 & vec)
 {
 	float dist_x = vec.x - x;
 	float dist_y = vec.y - y;
@@ -92,7 +92,7 @@ float FastVector3::Distance(const FastVector3 & vec)
 	return sqrt(fabs((dist_x * dist_x) + (dist_y * dist_y) + (dist_z * dist_z)));
 }
 
-FastVector4::FastVector4(float _x, float _y, float _w, float _z)
+FastVec4::FastVec4(float _x, float _y, float _w, float _z)
 {
 	x = _x;
 	y = _y;
@@ -100,7 +100,7 @@ FastVector4::FastVector4(float _x, float _y, float _w, float _z)
 	z = _z;
 }
 
-void FastVector4::operator+=(const FastVector4 & vec)
+void FastVec4::operator+=(const FastVec4 & vec)
 {
 	x += vec.x;
 	y += vec.y;
@@ -108,7 +108,7 @@ void FastVector4::operator+=(const FastVector4 & vec)
 	z += vec.z;
 }
 
-void FastVector4::operator-=(const FastVector4 & vec)
+void FastVec4::operator-=(const FastVec4 & vec)
 {
 	x -= vec.x;
 	y -= vec.y;
@@ -116,7 +116,7 @@ void FastVector4::operator-=(const FastVector4 & vec)
 	z -= vec.z;
 }
 
-void FastVector4::operator*=(const FastVector4 & vec)
+void FastVec4::operator*=(const FastVec4 & vec)
 {
 	x *= vec.x;
 	y *= vec.y;
@@ -124,7 +124,7 @@ void FastVector4::operator*=(const FastVector4 & vec)
 	z *= vec.z;
 }
 
-void FastVector4::operator/=(const FastVector4 & vec)
+void FastVec4::operator/=(const FastVec4 & vec)
 {
 	if (vec.x != 0)
 		x /= vec.x;
@@ -149,9 +149,9 @@ float FastRect::yh()
 	return y + h;
 }
 
-FastVector2 FastRect::Center()
+FastVec2 FastRect::Center()
 {
-	return FastVector2(x + (w * 0.5f), y + (h * 0.5f));
+	return FastVec2(x + (w * 0.5f), y + (h * 0.5f));
 }
 
 bool FastRect::Overlaps(FastRect rect)
@@ -166,23 +166,6 @@ bool FastRect::Contains(FastRect rec)
 	if (x < rec.x && xw() > rec.xw() && y < rec.y && yh() > rec.yh())
 		return true;
 	return false;
-}
-
-void Fast::Init()
-{
-	if (fast_main == nullptr)
-	{
-		fast_main = new FastInternal::FastMain();
-		fast_main->Start();
-	}
-}
-
-void Fast::Quit()
-{
-	if (fast_main != nullptr)
-		fast_main->CleanUp();
-
-	FAST_DEL(fast_main);
 }
 
 const char * Fast::GetVersion()
@@ -203,6 +186,39 @@ void Fast::PopID()
 	if (FastInternal::Inited())
 	{
 		fast_main->creation->PopID();
+	}
+}
+
+void FastInternal::Init()
+{
+	if (fast_main == nullptr)
+	{
+		fast_main = new FastInternal::FastMain();
+		fast_main->Start();
+	}
+}
+
+void FastInternal::Quit()
+{
+	if (fast_main != nullptr)
+		fast_main->CleanUp();
+
+	FAST_DEL(fast_main);
+}
+
+void FastInternal::NewFrame()
+{
+	if (FastInternal::Inited())
+	{
+
+	}
+}
+
+void FastInternal::EndFrame()
+{
+	if (FastInternal::Inited())
+	{
+		fast_main->creation->RemoveDeadElements();
 	}
 }
 
@@ -265,17 +281,72 @@ FastInternal::FastCreation::~FastCreation()
 {
 }
 
-void FastInternal::FastCreation::AddAliveElement(FastElement * el)
+FastInternal::FastElement * FastInternal::FastCreation::CreateElement(std::string hash, FastInternal::FastElementType type)
 {
+	FastInternal::FastElement* ret = nullptr;
+
+	switch (type)
+	{
+	case FastInternal::FAST_WINDOW:
+		ret = new FastInternal::FastWindow(hash);
+		break;
+	case FastInternal::FAST_BUTTON:
+		break;
+	case FastInternal::FAST_TEXT:
+		break;
+	default:
+		break;
+	}
+
+	if (ret != nullptr)
+	{
+		elements[hash] = ret;
+	}
+
+	return ret;
 }
 
-FastInternal::FastElement * FastInternal::FastCreation::GetAliveElement(std::string hash)
+FastInternal::FastElement * FastInternal::FastCreation::GetElement(std::string hash)
 {
-	return nullptr;
+	FastInternal::FastElement* ret = nullptr;
+
+	ret = elements[hash];
+
+	return ret;
+}
+
+void FastInternal::FastCreation::SetElementAlive(std::string hash)
+{
+	elements_alive.push_back(hash);
 }
 
 void FastInternal::FastCreation::RemoveDeadElements()
 {
+	for (std::map<std::string, FastElement*>::iterator it = elements.begin(); it != elements.end();)
+	{
+		bool found = false;
+
+		for (std::vector<std::string>::iterator al = elements_alive.begin(); al != elements_alive.end(); ++al)
+		{
+			if ((*it).first == (*al))
+			{
+				found = true;
+				elements_alive.erase(al);
+				break;
+			}
+		}
+
+		if (!found)
+		{
+			(*it).second->CleanUp();
+			FAST_DEL((*it).second);
+			it = elements.erase(it);
+		}
+		else
+			++it;
+	}
+
+	elements_alive.clear();
 }
 
 void FastInternal::FastCreation::PushID(std::string id)
@@ -319,11 +390,17 @@ FastInternal::FastStyle::~FastStyle()
 {
 }
 
-FastInternal::FastElement::FastElement()
+FastInternal::FastElement::FastElement(std::string _hash, FastElementType _type)
 {
+	hash = _hash;
+	type = _type;
 }
 
 FastInternal::FastElement::~FastElement()
+{
+}
+
+void FastInternal::FastElement::CleanUp()
 {
 }
 
@@ -343,11 +420,15 @@ FastInternal::FastDraw::~FastDraw()
 {
 }
 
-FastInternal::FastWindow::FastWindow()
+FastInternal::FastWindow::FastWindow(std::string hash) : FastElement(hash, FastElementType::FAST_WINDOW)
 {
 }
 
 FastInternal::FastWindow::~FastWindow()
+{
+}
+
+void FastInternal::FastWindow::Draw()
 {
 }
 
@@ -624,3 +705,61 @@ std::string FastInternal::FastHash::hexdigest() const
 	return std::string(buf);
 }
 
+void FastInternal::FastDrawShape::AddPoint(FastVec2 point_pos)
+{
+	if (!finished)
+	{
+		points.push_back(point_pos);
+	}
+}
+
+void FastInternal::FastDrawShape::Finish()
+{
+	if (points.size() >= 3)
+	{
+		finished = true;
+
+		// Calc vertext, indices and color
+		if (points.size() >= 3 && finished)
+		{
+			num_vertices = points.size();
+			num_indices = 3 * (points.size() - 2);
+
+			vertices = new float[num_vertices * 2];
+			indices = new uint[num_indices];
+			color = new float[num_vertices * 4];
+
+			// Triangulize
+			for (int i = 0; i < points.size(); i++)
+			{
+				vertices[i * 2] = points[i].x;
+				vertices[(i * 2) + 1] = points[i].y;
+
+				// Color for vertices
+				color[(i * 4) + 0] = _color.x;
+				color[(i * 4) + 1] = _color.y;
+				color[(i * 4) + 2] = _color.w;
+				color[(i * 4) + 3] = _color.z;
+
+				if (i > 1)
+				{
+					// Indices for triangle
+					indices[(i - 2) * 3] = 0;
+					indices[((i - 2) * 3) + 1] = i - 1;
+					indices[((i - 2) * 3) + 2] = i;
+				}
+			}
+		}
+		// -----------------------------------
+	}
+}
+
+void FastInternal::FastDrawShape::Clear()
+{
+	finished = false;
+
+	indices.clear();
+	vertices.clear();
+
+	points.clear();
+}
