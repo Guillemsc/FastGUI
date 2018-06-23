@@ -130,9 +130,11 @@
   <ItemGroup>
     <ClCompile Include="..\..\FastGUI.cpp" />
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="SDLOpenGL2Renderer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\FastGUI.h" />
+    <ClInclude Include="SDLOpenGL2Renderer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

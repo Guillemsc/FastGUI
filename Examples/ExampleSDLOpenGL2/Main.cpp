@@ -7,6 +7,7 @@
 #pragma comment( lib, "Libs/SDL2/libx86/SDL2main.lib" )
 #pragma comment (lib, "opengl32.lib")
 
+#include "SDLOpenGL2Renderer.h"
 #include "..\..\FastGUI.h"
 
 int main(int argc, char ** argv)
@@ -63,13 +64,13 @@ int main(int argc, char ** argv)
 	int size_x; int size_y;
 	SDL_GetWindowSize(window, &size_x, &size_y);
 
-	FastInternal::Init();
+	Fast_Init();
 
 	// Main loop
 	bool done = false;
 	while (!done)
 	{
-		FastInternal::NewFrame();
+		Fast_NewFrame();
 
 		SDL_Event event;
 		while (SDL_PollEvent(&event))
@@ -78,17 +79,21 @@ int main(int argc, char ** argv)
 				done = true;
 		}
 
+		Fast::Window("pene", FastVec2(30, 30));
+		
 		// End render
 		glViewport(0, 0, size_x, size_y);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glLoadIdentity();
 
-		FastInternal::EndFrame();
+		Fast_Render();
+
+		Fast_EndFrame();
 
 		SDL_GL_SwapWindow(window);
 	}
 
-	FastInternal::Quit();
+	Fast_Quit();
 
 	SDL_GL_DeleteContext(glcontext);
 	SDL_DestroyWindow(window);

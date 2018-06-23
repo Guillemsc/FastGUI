@@ -30,6 +30,16 @@
                             \
     }
 
+#define DEGTORAD   0.0174532925199432957f
+#define RADTODEG   57.295779513082320876f
+#define PI		   3.14159265358979323846f
+#define TWO_PI	   6.28318530717958647692f
+#define HALF_PI	   1.57079632679489661923f
+#define QUARTER_PI 0.78539816339744830961f
+#define INV_PI	   0.31830988618379067154f
+#define INV_TWO_PI 0.15915494309189533576f
+#define HAVE_M_PI
+
 #define FAST_ASSERT(_EXPR, _MSG) assert(_EXPR && _MSG)
 
 // TYPEDEFS
@@ -40,6 +50,7 @@ typedef unsigned char uchar;
 class FastVec2
 {
 public:
+	FastVec2();
 	FastVec2(float x, float y);
 
 	void operator += (const FastVec2& vec);
@@ -57,6 +68,7 @@ public:
 class FastVec3
 {
 public:
+	FastVec3();
 	FastVec3(float x, float y, float z);
 
 	void operator += (const FastVec3& vec);
@@ -75,6 +87,7 @@ public:
 class FastVec4
 {
 public:
+	FastVec4();
 	FastVec4(float x, float y, float w, float z);
 
 	void operator += (const FastVec4& vec);
@@ -89,14 +102,38 @@ public:
 	float z = 0.0f;
 };
 
+class FastColour
+{
+public:
+	FastColour();
+	FastColour(float r, float g, float b);
+	FastColour(const FastVec4& vec);
+	FastColour(float r, float g, float b, float a);
+
+	void operator += (const FastColour& vec);
+	void operator -= (const FastColour& vec);
+	void operator *= (const FastColour& vec);
+	void operator /= (const FastColour& vec);
+
+public:
+	float r = 0.0f;
+	float g = 0.0f;
+	float b = 0.0f;
+	float a = 0.0f;
+};
+
 class FastRect
 {
 public:
+	FastRect();
 	FastRect(float x, float y, float w, float h);
+	FastRect(const FastVec4& vec);
 
 	float xw();
 	float yh();
 
+	FastVec2 Pos();
+	FastVec2 Size();
 	FastVec2 Center();
 
 	bool Overlaps(FastRect rec);
@@ -115,26 +152,41 @@ namespace Fast
 
 	void PushID(const char* id);
 	void PopID();
+
+	void Window(const char* name, FastVec2 pos);
 }
 
 namespace FastInternal
 {
+	// Forward declarations
+	class FastCreation;
+	enum  FastElementType;
+	class FastElement;
+	class FastWindow;
+
+	class FastIO;
+	enum  FastKeyMapping;
+
+	class FastStyle;
+	struct FastStyleColours;
+	struct FastStylePhyisical;
+
+	class FastFonts;
+
+	class FastDraw;
+	class FastDrawShape;
+
+	class FastHash;
+
+
+	// General functions
 	void Init();
 	void Quit();
 	void NewFrame();
 	void EndFrame();
 
-	// Forward declarations
-	class FastCreation;
-	class FastIO;
-	class FastStyle;
-	class FastFonts;
-	class FastDraw;
-	class FastHash;
-
-	enum  FastElementType;
-	class FastElement;
-	class FastWindow;
+	std::vector<FastDrawShape> GetShapes();
+	void ClearShapes();
 
 	// Main module
 	class FastMain
@@ -167,6 +219,8 @@ namespace FastInternal
 		FastCreation();
 		~FastCreation();
 
+		FastElement* HandleElement(const char* name, FastInternal::FastElementType type, bool& created);
+
 		FastElement* CreateElement(std::string hash, FastInternal::FastElementType type);
 		FastElement* GetElement(std::string hash);
 
@@ -185,11 +239,84 @@ namespace FastInternal
 		std::vector<std::string> ids;
 	};
 
+	//-----------------------------------------------------------------------------
+	// FAST INPUT OUTPUT
+	//-----------------------------------------------------------------------------
+
+	enum FastKeyMapping
+	{
+		FAST_KEY_TAB,
+		FAST_KEY_LEFT_ARROW,
+		FAST_KEY_RIGHT_ARROW,
+		FAST_KEY_PAGE_UP,
+		FAST_KEY_PAGE_DOWN,
+		FAST_KEY_PAGE_DELETE,
+		FAST_KEY_PAGE_BACKSPACE,
+		FAST_KEY_PAGE_ENTER,
+		FAST_KEY_PAGE_ESCAPE,
+		FAST_KEY_PAGE_C,
+		FAST_KEY_PAGE_V,
+		FAST_KEY_PAGE_X,
+		FAST_KEY_PAGE_Z,
+		FAST_KEY_PAGE_Y,
+		FAST_KEY_COUNT
+	};
+
+	enum FastMouseState
+	{
+		FAST_MOUSE_IDLE,
+		FAST_MOUSE_DOWN,
+	};
+
 	class FastIO
 	{
 	public:
 		FastIO();
 		~FastIO();
+
+	private:
+		FastKeyMapping key_maping[FastKeyMapping::FAST_KEY_COUNT];
+
+		FastMouseState mouse_left_button = FAST_MOUSE_IDLE;
+		FastMouseState mouse_right_button = FAST_MOUSE_IDLE;
+	};
+	
+	// ----------------------------------------------------------------------------
+
+	//-----------------------------------------------------------------------------
+	// FAST STYLE
+	//-----------------------------------------------------------------------------
+
+	struct FastStylePhyisical
+	{
+		FastVec2 window_padding;
+		FastVec2 window_min_size;
+		float    window_rounding = 0.0f;
+		FastVec2 frame_padding;
+		FastVec2 item_spacing;
+		FastVec2 item_inner_spacing;
+		float    indent_spacing = 0.0f;
+		float    scrollbar_size = 0.0f;
+		float    scrollbar_rounding = 0.0f;
+		float    grab_min_size = 0.0f;
+		float    grab_rounding = 0.0f;
+	};
+
+	struct FastStyleColours
+	{
+		FastColour text;
+		FastColour text_disabled;
+		FastColour window_bg;
+		FastColour child_window_bg;
+		FastColour popup_bg;
+		FastColour border;
+		FastColour scroll_bar_bg;
+		FastColour scroll_bar_overed;
+		FastColour scroll_bar_clicked;
+		FastColour button;
+		FastColour button_over;
+		FastColour button_clicked;
+		FastColour spearator;
 	};
 
 	class FastStyle
@@ -197,7 +324,20 @@ namespace FastInternal
 	public:
 		FastStyle();
 		~FastStyle();
+
+		void SetDefaultStyle();
+
+	public:
+		float			   alpha = 1.0f;
+		FastStylePhyisical physical;
+		FastStyleColours   colours;
 	};
+
+	// ----------------------------------------------------------------------------
+
+	//-----------------------------------------------------------------------------
+	// FAST FONTS
+	//-----------------------------------------------------------------------------
 
 	class FastFonts
 	{
@@ -205,6 +345,8 @@ namespace FastInternal
 		FastFonts();
 		~FastFonts();
 	};
+
+	// ----------------------------------------------------------------------------
 
 	//-----------------------------------------------------------------------------
 	// FAST DRAW
@@ -216,23 +358,53 @@ namespace FastInternal
 		 FastDraw();
 		~FastDraw();
 
-		void Quad(FastVec2 pos, FastVec2 size, FastVec4 colour);
+		void Quad(FastVec2 pos, FastVec2 size, FastColour colour);
+		void CircleQuarter(FastVec2 pos, float radius, float starting_angle, FastColour colour);
+
+		std::vector<FastDrawShape> GetShapes() const;
+		void ClearShapes();
+	private:
+
+	private:
+		std::vector<FastDrawShape> shapes;
 	};
 
 	class FastDrawShape
 	{
+	public:
 		FastDrawShape();
 
 		void AddPoint(FastVec2 point_pos);
-		void Finish();
+		void Finish(FastColour colour);
 		void Clear();
 
+		uint* GetIndices();
+		uint GetIndicesCount();
+		float* GetVertices();
+		float* GetColours();
+		float* GetUvs();
+		float* GetVerticesColourUvs();
+
+		uint Offset();
+		uint VerticesOffset() const;
+		uint VerticesSize() const;
+		uint ColourOffset() const;
+		uint ColoursSize() const;
+		uint UvsOffset() const;
+		uint UvsSize() const;
+
 	private:
-		std::vector<int> indices;
+		std::vector<uint> indices;
 		std::vector<float> vertices;
+		std::vector<float> colours;
+		std::vector<float> uvs;
+
+		std::vector<float> vertices_colour_uvs;
 
 		bool finished = false;
 		std::vector<FastVec2> points;
+
+		FastVec4 quad_size;
 	};
 
 	// ----------------------------------------------------------------------------
@@ -324,6 +496,9 @@ namespace FastInternal
 
 		virtual void Draw() = 0;
 
+	public:
+		FastRect		rect;
+
 	private:
 		std::string     hash;
 		FastElementType type;
@@ -336,6 +511,8 @@ namespace FastInternal
 	public:
 		FastWindow(std::string hash);
 		~FastWindow();
+
+		FastColour bg_colour;
 
 		void Draw();
 	};

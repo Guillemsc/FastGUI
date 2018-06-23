@@ -2,6 +2,10 @@
 
 static FastInternal::FastMain* fast_main = nullptr;
 
+FastVec2::FastVec2()
+{
+}
+
 FastVec2::FastVec2(float _x, float _y)
 {
 	x = _x;
@@ -41,6 +45,10 @@ float FastVec2::Distance(const FastVec2 & vec)
 	float dist_y = vec.y - y;
 
 	return sqrt(fabs((dist_x * dist_x) + (dist_y * dist_y)));
+}
+
+FastVec3::FastVec3()
+{
 }
 
 FastVec3::FastVec3(float _x, float _y, float _z)
@@ -90,6 +98,10 @@ float FastVec3::Distance(const FastVec3 & vec)
 	float dist_z = vec.z - z;
 
 	return sqrt(fabs((dist_x * dist_x) + (dist_y * dist_y) + (dist_z * dist_z)));
+}
+
+FastVec4::FastVec4()
+{
 }
 
 FastVec4::FastVec4(float _x, float _y, float _w, float _z)
@@ -149,6 +161,16 @@ float FastRect::yh()
 	return y + h;
 }
 
+FastVec2 FastRect::Pos()
+{
+	return FastVec2(x, y);
+}
+
+FastVec2 FastRect::Size()
+{
+	return FastVec2(w, h);
+}
+
 FastVec2 FastRect::Center()
 {
 	return FastVec2(x + (w * 0.5f), y + (h * 0.5f));
@@ -166,6 +188,73 @@ bool FastRect::Contains(FastRect rec)
 	if (x < rec.x && xw() > rec.xw() && y < rec.y && yh() > rec.yh())
 		return true;
 	return false;
+}
+
+FastColour::FastColour()
+{
+}
+
+FastColour::FastColour(float _r, float _g, float _b)
+{
+	r = _r;
+	g = _g;
+	b = _b;
+	a = 1.0f;
+}
+
+FastColour::FastColour(const FastVec4 & vec)
+{
+	r = vec.x;
+	g = vec.y;
+	b = vec.w;
+	a = vec.z;
+}
+
+FastColour::FastColour(float _r, float _g, float _b, float _a)
+{
+	r = _r;
+	g = _g;
+	b = _b;
+	a = _a;
+}
+
+void FastColour::operator+=(const FastColour & vec)
+{
+	r += vec.r;
+	g += vec.g;
+	b += vec.b;
+	a += vec.a;
+}
+
+void FastColour::operator-=(const FastColour & vec)
+{
+	r -= vec.r;
+	g -= vec.g;
+	b -= vec.b;
+	a -= vec.a;
+}
+
+void FastColour::operator*=(const FastColour & vec)
+{
+	r *= vec.r;
+	g *= vec.g;
+	b *= vec.b;
+	a *= vec.a;
+}
+
+void FastColour::operator/=(const FastColour & vec)
+{
+	if (vec.r != 0)
+		r /= vec.r;
+
+	if (vec.g != 0)
+		g /= vec.g;
+
+	if (vec.b != 0)
+		b /= vec.b;
+
+	if (vec.a != 0)
+		a /= vec.a;
 }
 
 const char * Fast::GetVersion()
@@ -189,12 +278,40 @@ void Fast::PopID()
 	}
 }
 
+void Fast::Window(const char * name, FastVec2 pos)
+{
+	if (FastInternal::Inited())
+	{
+		bool created = false;
+
+		FastInternal::FastWindow* win = (FastInternal::FastWindow*)fast_main->creation->HandleElement(name, FastInternal::FastElementType::FAST_WINDOW, created);
+
+		if (win != nullptr)
+		{
+			if (created)
+			{
+				win->rect.x = pos.x;
+				win->rect.y = pos.y;
+				win->rect.w = 100;
+				win->rect.h = 50;
+
+				win->bg_colour = fast_main->style->colours.window_bg;
+				win->bg_colour.a = fast_main->style->alpha;
+			}
+
+			win->Draw();
+		}
+	}
+}
+
 void FastInternal::Init()
 {
 	if (fast_main == nullptr)
 	{
 		fast_main = new FastInternal::FastMain();
 		fast_main->Start();
+
+		fast_main->style->SetDefaultStyle();
 	}
 }
 
@@ -210,7 +327,9 @@ void FastInternal::NewFrame()
 {
 	if (FastInternal::Inited())
 	{
+		fast_main->draw->ClearShapes();
 
+		fast_main->draw->CircleQuarter(FastVec2(200, 200), 35, 0, FastColour(1, 1, 1));
 	}
 }
 
@@ -219,6 +338,26 @@ void FastInternal::EndFrame()
 	if (FastInternal::Inited())
 	{
 		fast_main->creation->RemoveDeadElements();
+	}
+}
+
+std::vector<FastInternal::FastDrawShape> FastInternal::GetShapes()
+{
+	std::vector<FastInternal::FastDrawShape> ret;
+
+	if (FastInternal::Inited())
+	{
+		ret = fast_main->draw->GetShapes();
+	}
+
+	return ret;
+}
+
+void FastInternal::ClearShapes()
+{
+	if (FastInternal::Inited())
+	{
+		fast_main->draw->ClearShapes();
 	}
 }
 
@@ -265,6 +404,10 @@ bool FastInternal::Inited()
 	return true;
 }
 
+FastRect::FastRect()
+{
+}
+
 FastRect::FastRect(float _x, float _y, float _w, float _h)
 {
 	x = _x;
@@ -273,12 +416,39 @@ FastRect::FastRect(float _x, float _y, float _w, float _h)
 	h = _h;
 }
 
+FastRect::FastRect(const FastVec4 & vec)
+{
+	x = vec.x;
+	y = vec.y;
+	w = vec.w;
+	h = vec.z;
+}
+
 FastInternal::FastCreation::FastCreation()
 {
 }
 
 FastInternal::FastCreation::~FastCreation()
 {
+}
+
+FastInternal::FastElement * FastInternal::FastCreation::HandleElement(const char * name, FastInternal::FastElementType type, bool& created)
+{
+	FastElement* ret = nullptr;
+
+	std::string hash = fast_main->hash->GetMD5(name);
+
+	ret = fast_main->creation->GetElement(hash);
+
+	if (ret == nullptr)
+	{
+		ret = fast_main->creation->CreateElement(hash, type);
+		created = true;
+	}
+
+	fast_main->creation->SetElementAlive(hash);
+
+	return ret;
 }
 
 FastInternal::FastElement * FastInternal::FastCreation::CreateElement(std::string hash, FastInternal::FastElementType type)
@@ -390,6 +560,12 @@ FastInternal::FastStyle::~FastStyle()
 {
 }
 
+void FastInternal::FastStyle::SetDefaultStyle()
+{
+	alpha = 1.0f;
+	colours.window_bg = FastColour(0.2f, 0.2f, 0.2f);
+}
+
 FastInternal::FastElement::FastElement(std::string _hash, FastElementType _type)
 {
 	hash = _hash;
@@ -420,6 +596,61 @@ FastInternal::FastDraw::~FastDraw()
 {
 }
 
+void FastInternal::FastDraw::Quad(FastVec2 pos, FastVec2 size, FastColour colour)
+{
+	FastInternal::FastDrawShape shape;
+
+	int min_x = pos.x;
+	int max_x = pos.x + size.x;
+	int min_y = pos.y;
+	int max_y = pos.y + size.y;
+
+	shape.AddPoint(FastVec2(min_x, min_y));
+	shape.AddPoint(FastVec2(min_x, max_y));
+	shape.AddPoint(FastVec2(max_x, max_y));
+	shape.AddPoint(FastVec2(max_x, min_y));
+	shape.Finish(colour);
+
+	shapes.push_back(shape);
+}
+
+void FastInternal::FastDraw::CircleQuarter(FastVec2 pos, float radius, float starting_angle, FastColour colour)
+{	
+	FastInternal::FastDrawShape shape;
+
+	int steps = 10;
+
+	float angle_add = (float)90 / (float)(steps);
+	float curr_angle = -starting_angle;
+
+	shape.AddPoint(FastVec2(pos.x, pos.y));
+
+	for (int i = 0; i < steps + 1; ++i)
+	{
+		float curr_angle_rad = curr_angle * DEGTORAD;
+		int x = cos(curr_angle_rad) * radius;
+		int y = sin(curr_angle_rad) * radius;
+
+		curr_angle -= angle_add;
+
+		shape.AddPoint(FastVec2(pos.x + x, pos.y + y));
+	}
+
+	shape.Finish(colour);
+
+	shapes.push_back(shape);
+}
+
+std::vector<FastInternal::FastDrawShape> FastInternal::FastDraw::GetShapes() const
+{
+	return shapes;
+}
+
+void FastInternal::FastDraw::ClearShapes()
+{
+	shapes.clear();
+}
+
 FastInternal::FastWindow::FastWindow(std::string hash) : FastElement(hash, FastElementType::FAST_WINDOW)
 {
 }
@@ -430,6 +661,7 @@ FastInternal::FastWindow::~FastWindow()
 
 void FastInternal::FastWindow::Draw()
 {
+	fast_main->draw->Quad(rect.Pos(), rect.Size(), bg_colour);
 }
 
 FastInternal::FastHash::FastHash()
@@ -705,50 +937,93 @@ std::string FastInternal::FastHash::hexdigest() const
 	return std::string(buf);
 }
 
+FastInternal::FastDrawShape::FastDrawShape()
+{
+}
+
 void FastInternal::FastDrawShape::AddPoint(FastVec2 point_pos)
 {
 	if (!finished)
 	{
 		points.push_back(point_pos);
+
+		if (points.size() == 1)
+		{
+			quad_size.x = point_pos.x;
+			quad_size.w = point_pos.x;
+			quad_size.y = point_pos.y;
+			quad_size.z = point_pos.y;
+		}
+		else
+		{
+			if (point_pos.x < quad_size.x)
+				quad_size.x = point_pos.x;
+
+			if (point_pos.x > quad_size.w)
+				quad_size.w = point_pos.x;
+
+			if (point_pos.y < quad_size.y)
+				quad_size.y = point_pos.y;
+
+			if (point_pos.y > quad_size.z)
+				quad_size.z = point_pos.y;
+		}
 	}
 }
 
-void FastInternal::FastDrawShape::Finish()
+void FastInternal::FastDrawShape::Finish(FastColour colour)
 {
 	if (points.size() >= 3)
 	{
-		finished = true;
-
 		// Calc vertext, indices and color
-		if (points.size() >= 3 && finished)
+		if (points.size() >= 3 && !finished)
 		{
-			num_vertices = points.size();
-			num_indices = 3 * (points.size() - 2);
+			finished = true;
 
-			vertices = new float[num_vertices * 2];
-			indices = new uint[num_indices];
-			color = new float[num_vertices * 4];
+			// Vertices, Uvs, Colours
+
+			int num_points = points.size();
 
 			// Triangulize
-			for (int i = 0; i < points.size(); i++)
+			for (int i = 0; i < num_points; i++)
 			{
-				vertices[i * 2] = points[i].x;
-				vertices[(i * 2) + 1] = points[i].y;
+				FastVec2 curr_point = points[i];
+
+				vertices.push_back(curr_point.x);
+				vertices.push_back(curr_point.y);
+				vertices.push_back(0);
 
 				// Color for vertices
-				color[(i * 4) + 0] = _color.x;
-				color[(i * 4) + 1] = _color.y;
-				color[(i * 4) + 2] = _color.w;
-				color[(i * 4) + 3] = _color.z;
+				colours.push_back(colour.r);
+				colours.push_back(colour.g);
+				colours.push_back(colour.b);
+				colours.push_back(colour.a);
+
+				// Uvs for vertices
+				float x_normalized = curr_point.x - quad_size.x;
+				float y_normalized = curr_point.y - quad_size.y;
+
+				float x_percentage = (x_normalized) / quad_size.w;
+				float y_percentage = (y_normalized) / quad_size.z;
+
+				float x_uv = x_percentage;
+				float y_uv = 1 - y_percentage;
+
+				uvs.push_back(x_uv);
+				uvs.push_back(y_uv);
 
 				if (i > 1)
 				{
 					// Indices for triangle
-					indices[(i - 2) * 3] = 0;
-					indices[((i - 2) * 3) + 1] = i - 1;
-					indices[((i - 2) * 3) + 2] = i;
+					indices.push_back(0);
+					indices.push_back(i - 1);
+					indices.push_back(i);
 				}
 			}
+
+			vertices_colour_uvs.insert(vertices_colour_uvs.end(), vertices.begin(), vertices.end());
+			vertices_colour_uvs.insert(vertices_colour_uvs.end(), colours.begin(), colours.end());
+			vertices_colour_uvs.insert(vertices_colour_uvs.end(), uvs.begin(), uvs.end());
 		}
 		// -----------------------------------
 	}
@@ -760,6 +1035,99 @@ void FastInternal::FastDrawShape::Clear()
 
 	indices.clear();
 	vertices.clear();
+	colours.clear();
+	uvs.clear();
+	vertices_colour_uvs.clear();
 
 	points.clear();
+}
+
+uint * FastInternal::FastDrawShape::GetIndices()
+{
+	uint* ret = nullptr;
+
+	if (indices.size() > 0)
+		ret = indices.data();
+	
+	return ret;
+}
+
+uint FastInternal::FastDrawShape::GetIndicesCount()
+{
+	return indices.size();
+}
+
+float * FastInternal::FastDrawShape::GetVertices()
+{
+	float* ret = nullptr;
+
+	if (vertices.size() > 0)
+		ret = vertices.data();
+	
+	return ret;
+}
+
+float * FastInternal::FastDrawShape::GetColours()
+{
+	float* ret = nullptr;
+
+	if (colours.size() > 0)
+		ret = colours.data();
+
+	return ret;
+}
+
+float * FastInternal::FastDrawShape::GetUvs()
+{
+	float* ret = nullptr;
+
+	if (uvs.size() > 0)
+		ret = uvs.data();
+
+	return ret;
+}
+
+float * FastInternal::FastDrawShape::GetVerticesColourUvs()
+{
+	float* ret = nullptr;
+
+	if (vertices_colour_uvs.size() > 0)
+		ret = vertices_colour_uvs.data();
+
+	return ret;
+}
+
+uint FastInternal::FastDrawShape::Offset()
+{
+	return 6;
+}
+
+uint FastInternal::FastDrawShape::VerticesOffset() const
+{
+	return 0;
+}
+
+uint FastInternal::FastDrawShape::VerticesSize() const
+{
+	return 3;
+}
+
+uint FastInternal::FastDrawShape::ColourOffset() const
+{
+	return 3;
+}
+
+uint FastInternal::FastDrawShape::ColoursSize() const
+{
+	return 4;
+}
+
+uint FastInternal::FastDrawShape::UvsOffset() const
+{
+	return 7;
+}
+
+uint FastInternal::FastDrawShape::UvsSize() const
+{
+	return 2;
 }

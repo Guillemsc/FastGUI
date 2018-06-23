@@ -13,9 +13,15 @@
     <ClCompile Include="..\..\FastGUI.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="SDLOpenGL2Renderer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\FastGUI.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SDLOpenGL2Renderer.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
