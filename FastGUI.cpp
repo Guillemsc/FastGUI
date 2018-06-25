@@ -12,6 +12,44 @@ FastVec2::FastVec2(float _x, float _y)
 	y = _y;
 }
 
+FastVec2 FastVec2::operator+(const FastVec2 & vec)
+{
+	return FastVec2(x + vec.x, y + vec.y);
+}
+
+FastVec2 FastVec2::operator-(const FastVec2 & vec)
+{
+	return FastVec2(x - vec.x, y - vec.y);
+}
+
+FastVec2 FastVec2::operator*(const FastVec2 & vec)
+{
+	return FastVec2(x * vec.x, y * vec.y);
+}
+
+FastVec2 FastVec2::operator*(int val)
+{
+	return FastVec2(x * val, y *val);
+}
+
+FastVec2 FastVec2::operator*(float val)
+{
+	return FastVec2(x * val, y *val);
+}
+
+FastVec2 FastVec2::operator/(const FastVec2 & vec)
+{
+	FastVec2 ret;
+
+	if (vec.x != 0)
+		ret.x = x / vec.x;
+
+	if (vec.y != 0)
+		ret.y = y / vec.y;
+
+	return ret;
+}
+
 void FastVec2::operator+=(const FastVec2 & vec)
 {
 	x += vec.x;
@@ -56,6 +94,16 @@ FastVec3::FastVec3(float _x, float _y, float _z)
 	x = _x;
 	y = _y;
 	z = _z;
+}
+
+FastVec3 FastVec3::operator+(const FastVec3 & vec)
+{
+	return FastVec3(x + vec.x, y + vec.y, z + vec.z);
+}
+
+FastVec3 FastVec3::operator-(const FastVec3 & vec)
+{
+	return FastVec3(x - vec.x, y - vec.y, z - vec.z);
 }
 
 void FastVec3::operator+=(const FastVec3 & vec)
@@ -110,6 +158,16 @@ FastVec4::FastVec4(float _x, float _y, float _w, float _z)
 	y = _y;
 	w = _w;
 	z = _z;
+}
+
+FastVec4 FastVec4::operator+(const FastVec4 & vec)
+{
+	return FastVec4(x + vec.x, y + vec.y, w + vec.w, z + vec.z);
+}
+
+FastVec4 FastVec4::operator-(const FastVec4 & vec)
+{
+	return FastVec4(x - vec.x, y - vec.y, w - vec.w, z - vec.z);
 }
 
 void FastVec4::operator+=(const FastVec4 & vec)
@@ -216,6 +274,16 @@ FastColour::FastColour(float _r, float _g, float _b, float _a)
 	g = _g;
 	b = _b;
 	a = _a;
+}
+
+FastColour FastColour::operator+(const FastColour & vec)
+{
+	return FastColour(r + vec.r, g + vec.g, b + vec.b, a + vec.a);
+}
+
+FastColour FastColour::operator-(const FastColour & vec)
+{
+	return FastColour(r - vec.r, g - vec.g, b - vec.b, a - vec.a);
 }
 
 void FastColour::operator+=(const FastColour & vec)
@@ -329,7 +397,12 @@ void FastInternal::NewFrame()
 	{
 		fast_main->draw->ClearShapes();
 
-		fast_main->draw->CircleQuarter(FastVec2(200, 200), 35, 0, FastColour(1, 1, 1));
+		fast_main->draw->CircleQuarter(FastVec2(200, 200), 50, 0, 1, FastColour(1, 1, 1));
+
+		fast_main->draw->RoundedQuad(FastVec2(300, 300), FastVec2(300, 100), 20, 10, FastColour(0.2, 0.2, 0.2));
+		fast_main->draw->TopRoundedQuad(FastVec2(300, 300), FastVec2(300, 20), 20, 10, FastColour(0.3, 0.3, 0.3));
+
+		fast_main->draw->BezierQuad(FastVec2(200, 200), FastVec2(10, 10), FastVec2(0.8f, 0.0f), FastVec2(0.8f, 0.0f));
 	}
 }
 
@@ -596,6 +669,10 @@ FastInternal::FastDraw::~FastDraw()
 {
 }
 
+void FastInternal::FastDraw::Line(FastVec2 start, FastVec2 end, FastColour colour)
+{
+}
+
 void FastInternal::FastDraw::Quad(FastVec2 pos, FastVec2 size, FastColour colour)
 {
 	FastInternal::FastDrawShape shape;
@@ -614,11 +691,11 @@ void FastInternal::FastDraw::Quad(FastVec2 pos, FastVec2 size, FastColour colour
 	shapes.push_back(shape);
 }
 
-void FastInternal::FastDraw::CircleQuarter(FastVec2 pos, float radius, float starting_angle, FastColour colour)
+void FastInternal::FastDraw::CircleQuarter(FastVec2 pos, float radius, float starting_angle, float roundness, FastColour colour)
 {	
 	FastInternal::FastDrawShape shape;
 
-	int steps = 10;
+	int steps = 8;
 
 	float angle_add = (float)90 / (float)(steps);
 	float curr_angle = -starting_angle;
@@ -639,6 +716,63 @@ void FastInternal::FastDraw::CircleQuarter(FastVec2 pos, float radius, float sta
 	shape.Finish(colour);
 
 	shapes.push_back(shape);
+}
+
+void FastInternal::FastDraw::RoundedQuad(FastVec2 pos, FastVec2 size, float round_radius, float roundness, FastColour colour)
+{
+	int min_x = pos.x;
+	int max_x = pos.x + size.x;
+	int min_y = pos.y;
+	int max_y = pos.y + size.y;
+
+	CircleQuarter(FastVec2(min_x + round_radius, min_y + round_radius), round_radius, 90, roundness, colour);
+	CircleQuarter(FastVec2(min_x + round_radius, max_y - round_radius), round_radius, 180, roundness, colour);
+	CircleQuarter(FastVec2(max_x - round_radius, max_y - round_radius), round_radius, 270, roundness, colour);
+	CircleQuarter(FastVec2(max_x - round_radius, min_y + round_radius), round_radius, 360, roundness, colour);
+
+	Quad(FastVec2(min_x + round_radius, min_y), FastVec2((max_x - min_x) - (round_radius * 2), max_y - min_y), colour);
+	Quad(FastVec2(min_x, min_y + round_radius), FastVec2(round_radius, (max_y - min_y) - (round_radius * 2)), colour);
+	Quad(FastVec2(max_x - round_radius, min_y + round_radius), FastVec2(round_radius, (max_y - min_y) - (round_radius * 2)), colour);
+}
+
+void FastInternal::FastDraw::TopRoundedQuad(FastVec2 pos, FastVec2 size, float round_radius, float roundness, FastColour colour)
+{
+	int min_x = pos.x;
+	int max_x = pos.x + size.x;
+	int min_y = pos.y;
+	int max_y = pos.y + size.y;
+
+	CircleQuarter(FastVec2(min_x + round_radius, min_y + round_radius), round_radius, 90, roundness, colour);
+	CircleQuarter(FastVec2(max_x - round_radius, min_y + round_radius), round_radius, 360, roundness, colour);
+
+	Quad(FastVec2(min_x, min_y + round_radius), FastVec2(max_x - min_x, (max_y - min_y) - (round_radius)), colour);
+	Quad(FastVec2(min_x + round_radius, min_y), FastVec2((max_x - min_x) - (round_radius * 2), round_radius), colour);
+}
+
+void FastInternal::FastDraw::BezierQuad(FastVec2 pos, FastVec2 size, FastVec2 p1, FastVec2 p2)
+{
+	/*FastInternal::FastDrawShape shape;
+
+	std::vector<FastVec2> points; points.push_back(p1); points.push_back(p2);
+
+	for (float t = 0; t < 1; t += 0.6f)
+	{
+		int i = points.size() - 1;
+		while (i > 0)
+		{			
+			for (int k = 0; k < i; k++)
+			{
+				float point_x = points[k].x + t * (points[k + 1].x - points[k].x);
+				float point_y = points[k].y + t * (points[k + 1].y - points[k].y);
+
+				shape.AddPoint(FastVec2(pos.x + point_x, pos.y + point_y));
+			}
+			--i;
+		}
+	}
+	
+	shape.Finish(FastColour(1, 1, 1, 1));
+	shapes.push_back(shape);*/
 }
 
 std::vector<FastInternal::FastDrawShape> FastInternal::FastDraw::GetShapes() const

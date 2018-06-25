@@ -30,6 +30,8 @@ void Fast_Render()
 	glEnableClientState(GL_COLOR_ARRAY);
 	glEnable(GL_TEXTURE_2D);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	glEnable(GL_MULTISAMPLE);
+	glHint(GL_MULTISAMPLE_FILTER_HINT_NV, GL_NICEST);
 
 	// Setup viewport, orthographic projection matrix
 	glViewport(0, 0, 1280, 720);

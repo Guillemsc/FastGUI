@@ -53,6 +53,12 @@ public:
 	FastVec2();
 	FastVec2(float x, float y);
 
+	FastVec2 operator + (const FastVec2& vec);
+	FastVec2 operator - (const FastVec2& vec);
+	FastVec2 operator * (const FastVec2& vec);
+	FastVec2 operator * (int vec);
+	FastVec2 operator * (float vec);
+	FastVec2 operator / (const FastVec2& vec);
 	void operator += (const FastVec2& vec);
 	void operator -= (const FastVec2& vec);
 	void operator *= (const FastVec2& vec);
@@ -71,6 +77,8 @@ public:
 	FastVec3();
 	FastVec3(float x, float y, float z);
 
+	FastVec3 operator + (const FastVec3& vec);
+	FastVec3 operator - (const FastVec3& vec);
 	void operator += (const FastVec3& vec);
 	void operator -= (const FastVec3& vec);
 	void operator *= (const FastVec3& vec);
@@ -90,6 +98,8 @@ public:
 	FastVec4();
 	FastVec4(float x, float y, float w, float z);
 
+	FastVec4 operator + (const FastVec4& vec);
+	FastVec4 operator - (const FastVec4& vec);
 	void operator += (const FastVec4& vec);
 	void operator -= (const FastVec4& vec);
 	void operator *= (const FastVec4& vec);
@@ -110,6 +120,8 @@ public:
 	FastColour(const FastVec4& vec);
 	FastColour(float r, float g, float b, float a);
 
+	FastColour operator + (const FastColour& vec);
+	FastColour operator - (const FastColour& vec);
 	void operator += (const FastColour& vec);
 	void operator -= (const FastColour& vec);
 	void operator *= (const FastColour& vec);
@@ -358,8 +370,12 @@ namespace FastInternal
 		 FastDraw();
 		~FastDraw();
 
+		void Line(FastVec2 start, FastVec2 end, FastColour colour);
 		void Quad(FastVec2 pos, FastVec2 size, FastColour colour);
-		void CircleQuarter(FastVec2 pos, float radius, float starting_angle, FastColour colour);
+		void CircleQuarter(FastVec2 pos, float radius, float starting_angle, float roundness, FastColour colour);
+		void RoundedQuad(FastVec2 pos, FastVec2 size, float round_radius, float roundness, FastColour colour);
+		void TopRoundedQuad(FastVec2 pos, FastVec2 size, float round_radius, float roundness, FastColour colour);
+		void BezierQuad(FastVec2 pos, FastVec2 size, FastVec2 p1, FastVec2 p2);
 
 		std::vector<FastDrawShape> GetShapes() const;
 		void ClearShapes();
