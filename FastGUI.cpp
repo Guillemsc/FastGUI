@@ -498,14 +498,14 @@ void FastInternal::NewFrame()
 	{
 		fast_main->draw->ClearShapes();
 
-		fast_main->draw->CircleQuarter(FastVec2(200, 200), 50, 0, 1, FastColour(1, 1, 1));
+		//fast_main->draw->CircleQuarter(FastVec2(200, 200), 50, 0, 1, FastColour(1, 1, 1));
 
-		fast_main->draw->RoundedQuad(FastVec2(300, 300), FastVec2(300, 100), 10, 10, FastColour(0.2, 0.2, 0.2));
-		//fast_main->draw->TopRoundedQuad(FastVec2(300, 300), FastVec2(300, 100), 150, 10, FastColour(0.3, 0.3, 0.3));
+		//fast_main->draw->RoundedQuad(FastVec2(300, 300), FastVec2(300, 100), 10, 10, FastColour(0.2, 0.2, 0.2));
+		////fast_main->draw->TopRoundedQuad(FastVec2(300, 300), FastVec2(300, 100), 150, 10, FastColour(0.3, 0.3, 0.3));
 
-		fast_main->draw->BezierQuad(FastVec2(200, 200), FastVec2(10, 10), FastVec2(0.8f, 0.0f), FastVec2(0.8f, 0.0f));
+		//fast_main->draw->BezierQuad(FastVec2(200, 200), FastVec2(10, 10), FastVec2(0.8f, 0.0f), FastVec2(0.8f, 0.0f));
 
-		fast_main->draw->Circle(FastVec2(400, 200), 10, FastColour(0.2, 0.2, 0.2));
+		//fast_main->draw->Circle(FastVec2(400, 200), 10, FastColour(0.2, 0.2, 0.2));
 
 		fast_main->draw->ImageQuad(FastVec2(30, 30), FastVec2(1280 - 130 , 720 - 60), 1);
 
@@ -807,7 +807,7 @@ FastInternal::FastFont* FastInternal::FastFonts::LoadFont(const char * path)
 		ret = new FastFont(font_info);
 
 		int b_w = 2024;
-		int b_h = 1024 * 1.5f;
+		int b_h = 1024 * 10.5f;
 		FastBuffer buffer(b_w, b_h);
 
 		float scale = stbtt_ScaleForPixelHeight(&font_info, 128);
@@ -819,11 +819,18 @@ FastInternal::FastFont* FastInternal::FastFonts::LoadFont(const char * path)
 		descent *= scale;
 		lineGap *= scale;
 
+		int y = ascent - descent;
+
 		int x = 0;
 		int line = 0;
-		for (int i = 0; i < 33; ++i)
+		for (int i = 0; i < 5; ++i)
 		{
 			int gliph_index = i;
+
+			if (gliph_index == 4)
+			{
+				int stop = 0;
+			}
 
 			int c_x1, c_y1, c_x2, c_y2;
 			stbtt_GetGlyphBitmapBox(&font_info, gliph_index, scale, scale, &c_x1, &c_y1, &c_x2, &c_y2);
@@ -841,13 +848,27 @@ FastInternal::FastFont* FastInternal::FastFonts::LoadFont(const char * path)
 				x = 0;
 			}
 
-			int y = ascent - descent;
-
 			int byteOffset = x + (line * y * b_w);
 
+			int gb_x, gb_y, gb_w, gb_h;
+			stbtt_GetGlyphBox(&font_info, gliph_index,  &gb_x, &gb_y, &gb_w, &gb_h);
 			stbtt_MakeGlyphBitmap(&font_info, buffer.GetBufferData() + byteOffset, c_x2 - c_x1, c_y2 - c_y1, b_w, scale, scale, gliph_index);
 
-			FastVec2 uvs_x0 = TexturePosToUV(FastVec2(b_w, b_h), FastVec2(x, line * y));
+			float x0_size_x = x;
+			float x0_size_y = line * y;
+			FastVec2 uvs_x0 = TexturePosToUV(FastVec2(b_w, b_h), FastVec2(x0_size_x, x0_size_y));
+
+			float y1_size_x = x + c_x2;
+			float y1_size_y = (line * y) - c_y2 - c_y1;
+			FastVec2 uvs_y1 = TexturePosToUV(FastVec2(b_w, b_h), FastVec2(y1_size_x, y1_size_y));
+
+			FastVec2 uvs_x1 = FastVec2(uvs_y1.x, uvs_x0.y);
+			FastVec2 uvs_y0 = FastVec2(uvs_x0.x, uvs_y1.y);
+
+			float ratio_x_y = 1;
+
+			if (gb_w > 0)
+				ratio_x_y = gb_h / gb_w;
 
 			int ax;
 			stbtt_GetGlyphHMetrics(&font_info, gliph_index, &ax, 0);
@@ -857,16 +878,14 @@ FastInternal::FastFont* FastInternal::FastFonts::LoadFont(const char * path)
 			kern = stbtt_GetGlyphKernAdvance(&font_info, gliph_index, gliph_index + 1);
 			x += kern * scale;
 
-			//FastVec2 uvs_y2 = TexturePosToUV(FastVec2(b_w, b_h), FastVec2(x, line * y));
-			//FastVec2 uvs_y2 = TexturePosToUV(FastVec2(b_w, b_h), FastVec2(x, line * y));
+			FastGlyph glyph;
+			glyph.uvs_x0 = uvs_x0;
+			glyph.uvs_x1 = uvs_x1;
+			glyph.uvs_y0 = uvs_y0;
+			glyph.uvs_y1 = uvs_y1;
+			glyph.ratio_x_y = ratio_x_y;
 
-			//FastGlyph glyph;
-			//glyph.uvs_x0 = uvs_x0;
-			//glyph.uvs_x1 = uvs_start;
-			//glyph.uvs_y0 = uvs_start;
-			//glyph.uvs_y1 = uvs_y2;
-
-			//ret->glyphs.push_back(glyph);
+			ret->glyphs.push_back(glyph);
 		}
 
 		buffer.FlipUpsideDown();
@@ -1072,15 +1091,19 @@ void FastInternal::FastDraw::Text(FastVec2 pos, float size, FastFont* font, std:
 			int min_x = pos.x;
 			int max_x = pos.x + size;
 			int min_y = pos.y;
-			int max_y = pos.y + size;
+			int max_y = pos.y + size * glph.ratio_x_y;
 
 			FastDrawShape shape;
 
-			//shape.AddPoint(FastVec2(min_x, min_y), FastVec2(glph.));
-			//shape.AddPoint(FastVec2(min_x, max_y));
-			//shape.AddPoint(FastVec2(max_x, max_y));
-			//shape.AddPoint(FastVec2(max_x, min_y));
-			//shape.Finish(FastColour(1.0f, 0.1f, 0.9f, 1.0f));
+			shape.AddPoint(FastVec2(min_x, min_y));
+			shape.AddPoint(FastVec2(min_x, max_y));
+			shape.AddPoint(FastVec2(max_x, max_y));
+			shape.AddPoint(FastVec2(max_x, min_y));
+			shape.Finish(FastColour(1.0f, 0.1f, 0.2f, 1.0f), FastVec4(glph.uvs_x0.x, glph.uvs_x0.y, glph.uvs_y1.x, glph.uvs_y1.y));
+
+			shape.AddTextureId(fast_main->fonts->test_font->texture_id);
+
+			shapes.push_back(shape);
 		}
 	}
 }
@@ -1411,12 +1434,11 @@ FastInternal::FastDrawShape::FastDrawShape()
 {
 }
 
-void FastInternal::FastDrawShape::AddPoint(FastVec2 point_pos, FastVec2 uvs)
+void FastInternal::FastDrawShape::AddPoint(FastVec2 point_pos)
 {
 	if (!finished)
 	{
 		points.push_back(point_pos);
-		points_uvs.push_back(uvs);
 
 		if (points.size() == 1)
 		{
@@ -1464,7 +1486,6 @@ void FastInternal::FastDrawShape::Finish(FastColour colour)
 			for (int i = 0; i < num_points; i++)
 			{
 				FastVec2 curr_point = points[i];
-				FastVec2 curr_uvs = points_uvs[i];
 
 				vertices.push_back(curr_point.x);
 				vertices.push_back(curr_point.y);
@@ -1476,24 +1497,96 @@ void FastInternal::FastDrawShape::Finish(FastColour colour)
 				colours.push_back(colour.b);
 				colours.push_back(colour.a);
 
-				float x_uv = curr_uvs.x;
-				float y_uv = curr_uvs.y;
+				float x_uv = 0;
+				float y_uv = 0;
+				
+				// Uvs for vertices
+				float x_normalized = curr_point.x - quad_size.x;
+				float y_normalized = curr_point.y - quad_size.y;
 
-				if (curr_uvs.x < 0 || curr_uvs.y < 0)
-				{
-					// Uvs for vertices
-					float x_normalized = curr_point.x - quad_size.x;
-					float y_normalized = curr_point.y - quad_size.y;
+				float x_percentage = (x_normalized) / (quad_size.w - quad_size.x);
+				float y_percentage = (y_normalized) / (quad_size.z - quad_size.y);
 
-					float x_percentage = (x_normalized) / quad_size.w;
-					float y_percentage = (y_normalized) / quad_size.z;
-
-					x_uv = x_percentage;
-					y_uv = 1 - y_percentage;
-				}
-
+				x_uv = x_percentage;
+				y_uv = 1 - y_percentage;
+				
 				uvs.push_back(x_uv);
 				uvs.push_back(y_uv);
+
+				if (i > 1)
+				{
+					// Indices for triangle
+					indices.push_back(0);
+					indices.push_back(i - 1);
+					indices.push_back(i);
+				}
+			}
+
+			vertices_colour_uvs.insert(vertices_colour_uvs.end(), vertices.begin(), vertices.end());
+			vertices_colour_uvs.insert(vertices_colour_uvs.end(), colours.begin(), colours.end());
+			vertices_colour_uvs.insert(vertices_colour_uvs.end(), uvs.begin(), uvs.end());
+		}
+		// -----------------------------------
+	}
+}
+
+void FastInternal::FastDrawShape::Finish(FastColour colour, FastVec4 range_uvs)
+{
+	if (points.size() >= 3)
+	{
+		// Calc vertext, indices and color
+		if (points.size() >= 3 && !finished)
+		{
+			finished = true;
+
+			// Vertices, Uvs, Colours
+
+			int num_points = points.size();
+
+			// Triangulize
+			for (int i = 0; i < num_points; i++)
+			{
+				FastVec2 curr_point = points[i];
+
+				vertices.push_back(curr_point.x);
+				vertices.push_back(curr_point.y);
+				vertices.push_back(0);
+
+				// Color for vertices
+				colours.push_back(colour.r);
+				colours.push_back(colour.g);
+				colours.push_back(colour.b);
+				colours.push_back(colour.a);
+
+				float ranged_x_uv = 0;
+				float ranged_y_uv = 0;
+
+				// Uvs for vertices
+				float x_normalized = curr_point.x - quad_size.x;
+				float y_normalized = curr_point.y - quad_size.y;
+
+				float x_percentage = (x_normalized) / (quad_size.w - quad_size.x);
+				float y_percentage = (y_normalized) / (quad_size.z - quad_size.y);
+
+				float x_uv = x_percentage;
+				float y_uv = y_percentage;
+
+				if (x_uv > 0)
+				{
+					float diff = (1 * (range_uvs.w - range_uvs.x));
+					ranged_x_uv = (x_uv * diff) / 1;
+				}
+				ranged_x_uv += range_uvs.x;
+
+				if (y_uv > 0)
+				{
+					float diff = ((1 - range_uvs.z) - (1 - range_uvs.y));
+					ranged_y_uv = (y_uv * diff) / 1;
+				}
+				ranged_y_uv = 1 - ranged_y_uv - (1 - range_uvs.y);
+
+				uvs.push_back(ranged_x_uv);
+				uvs.push_back(ranged_y_uv);
 
 				if (i > 1)
 				{

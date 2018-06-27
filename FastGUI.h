@@ -429,6 +429,8 @@ namespace FastInternal
 		FastVec2 uvs_y0;
 		FastVec2 uvs_x1;
 		FastVec2 uvs_y1;
+
+		float ratio_x_y = 0.0f;
 	};
 
 	class FastFonts
@@ -488,9 +490,10 @@ namespace FastInternal
 	public:
 		FastDrawShape();
 
-		void AddPoint(FastVec2 point_pos, FastVec2 uvs = FastVec2(-1, -1));
+		void AddPoint(FastVec2 point_pos);
 		void AddTextureId(Fuint id);
 		void Finish(FastColour colour);
+		void Finish(FastColour colour, FastVec4 range_uvs);
 		void Clear();
 
 		Fuint* GetIndices();
@@ -511,18 +514,17 @@ namespace FastInternal
 		Fuint UvsSize() const;
 
 	private:
-		std::vector<Fuint> indices;
-		std::vector<float> vertices;
-		std::vector<float> colours;
-		std::vector<float> uvs;
-		                
-		Fuint              texture_id = 0;
+		std::vector<Fuint>    indices;
+		std::vector<float>    vertices;
+		std::vector<float>    colours;
+		std::vector<float>    uvs;
+		                      
+		Fuint                 texture_id = 0;
 
-		std::vector<float> vertices_colour_uvs;
+		std::vector<float>    vertices_colour_uvs;
 
-		bool finished = false;
+		bool				  finished = false;
 		std::vector<FastVec2> points;
-		std::vector<FastVec2> points_uvs;
 
 		FastVec4 quad_size;
 	};

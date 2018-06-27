@@ -61,6 +61,8 @@ void Fast_Render()
 		glColorPointer(curr_shape.ColoursSize(), GL_FLOAT, sizeof(float) * curr_shape.ColoursSize(), curr_shape.GetColours());
 
 		glDrawElements(GL_TRIANGLES, curr_shape.GetIndicesCount(), GL_UNSIGNED_INT, curr_shape.GetIndices());
+
+		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 
 	glDisableClientState(GL_COLOR_ARRAY);

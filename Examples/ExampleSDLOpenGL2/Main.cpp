@@ -79,7 +79,7 @@ int main(int argc, char ** argv)
 				done = true;
 		}
 
-		Fast::Window("pene", FastVec2(30, 30));
+		//Fast::Window("pene", FastVec2(30, 30));
 		
 		// End render
 		glViewport(0, 0, size_x, size_y);
