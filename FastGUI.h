@@ -402,7 +402,6 @@ namespace FastInternal
 		~FastFont();
 
 		FastGlyph GetGlyphByChar(Fuchar c);
-		FastVec2 GetStringRenderingSize(std::string text);
 		float GetFontScale();
 
 	public:
@@ -473,7 +472,7 @@ namespace FastInternal
 		void RoundedQuad(FastVec2 pos, FastVec2 size, float round_radius, float roundness, FastColour colour);
 		void TopRoundedQuad(FastVec2 pos, FastVec2 size, float round_radius, float roundness, FastColour colour);
 
-		void Text(FastVec2 pos, float size, FastFont* font, std::string text);
+		void Text(FastVec2 pos, float size, FastFont* font, std::string text, float word_separation);
 
 		void BezierQuad(FastVec2 pos, FastVec2 size, FastVec2 p1, FastVec2 p2); // Not working
 

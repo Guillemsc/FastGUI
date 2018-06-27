@@ -509,7 +509,7 @@ void FastInternal::NewFrame()
 
 		fast_main->draw->ImageQuad(FastVec2(30, 30), FastVec2(1280 - 130 , 720 - 60), 1);
 
-		fast_main->draw->Text(FastVec2(100, 100), 100, fast_main->fonts->test_font, "!");
+		fast_main->draw->Text(FastVec2(400, 400), 80, fast_main->fonts->test_font, "abcd", 5);
 	}
 }
 
@@ -807,7 +807,7 @@ FastInternal::FastFont* FastInternal::FastFonts::LoadFont(const char * path)
 		ret = new FastFont(font_info);
 
 		int b_w = 2024;
-		int b_h = 1024 * 10.5f;
+		int b_h = 1024 * 2.0f;
 		FastBuffer buffer(b_w, b_h);
 
 		float scale = stbtt_ScaleForPixelHeight(&font_info, 128);
@@ -819,18 +819,13 @@ FastInternal::FastFont* FastInternal::FastFonts::LoadFont(const char * path)
 		descent *= scale;
 		lineGap *= scale;
 
-		int y = ascent - descent;
+		int total_y = ascent - descent;
 
 		int x = 0;
 		int line = 0;
-		for (int i = 0; i < 5; ++i)
+		for (int i = 0; i < 100; ++i)
 		{
 			int gliph_index = i;
-
-			if (gliph_index == 4)
-			{
-				int stop = 0;
-			}
 
 			int c_x1, c_y1, c_x2, c_y2;
 			stbtt_GetGlyphBitmapBox(&font_info, gliph_index, scale, scale, &c_x1, &c_y1, &c_x2, &c_y2);
@@ -848,18 +843,25 @@ FastInternal::FastFont* FastInternal::FastFonts::LoadFont(const char * path)
 				x = 0;
 			}
 
-			int byteOffset = x + (line * y * b_w);
+			if (gliph_index == stbtt_FindGlyphIndex(&font_info, 'a'))
+			{
+				int stop = 0;
+			}
+
+			int tmp_total = total_y + (c_y1 * 0.5f);
+
+			int byteOffset = x + (line * tmp_total * b_w);
 
 			int gb_x, gb_y, gb_w, gb_h;
 			stbtt_GetGlyphBox(&font_info, gliph_index,  &gb_x, &gb_y, &gb_w, &gb_h);
 			stbtt_MakeGlyphBitmap(&font_info, buffer.GetBufferData() + byteOffset, c_x2 - c_x1, c_y2 - c_y1, b_w, scale, scale, gliph_index);
 
 			float x0_size_x = x;
-			float x0_size_y = line * y;
+			float x0_size_y = line * tmp_total;
 			FastVec2 uvs_x0 = TexturePosToUV(FastVec2(b_w, b_h), FastVec2(x0_size_x, x0_size_y));
 
 			float y1_size_x = x + c_x2;
-			float y1_size_y = (line * y) - c_y2 - c_y1;
+			float y1_size_y = (line * tmp_total) - c_y2 - c_y1;
 			FastVec2 uvs_y1 = TexturePosToUV(FastVec2(b_w, b_h), FastVec2(y1_size_x, y1_size_y));
 
 			FastVec2 uvs_x1 = FastVec2(uvs_y1.x, uvs_x0.y);
@@ -868,7 +870,7 @@ FastInternal::FastFont* FastInternal::FastFonts::LoadFont(const char * path)
 			float ratio_x_y = 1;
 
 			if (gb_w > 0)
-				ratio_x_y = gb_h / gb_w;
+				ratio_x_y = (float)gb_h / (float)gb_w;
 
 			int ax;
 			stbtt_GetGlyphHMetrics(&font_info, gliph_index, &ax, 0);
@@ -1078,20 +1080,22 @@ void FastInternal::FastDraw::TopRoundedQuad(FastVec2 pos, FastVec2 size, float r
 	Quad(FastVec2(min_x, min_y + round_radius), FastVec2(max_x - min_x, max_y - min_y), colour);
 }
 
-void FastInternal::FastDraw::Text(FastVec2 pos, float size, FastFont* font, std::string text)
+void FastInternal::FastDraw::Text(FastVec2 pos, float size, FastFont* font, std::string text, float word_separation)
 {
 	if (font != nullptr)
 	{
+		FastVec2 curr_pos = pos;
+
 		for (int i = 0; i < text.size(); ++i)
 		{
 			Fuchar c = text[i];
 
 			FastGlyph glph = font->GetGlyphByChar(c);
 
-			int min_x = pos.x;
-			int max_x = pos.x + size;
-			int min_y = pos.y;
-			int max_y = pos.y + size * glph.ratio_x_y;
+			int min_x = curr_pos.x;
+			int max_x = curr_pos.x + size;
+			int min_y = curr_pos.y;
+			int max_y = curr_pos.y + size * glph.ratio_x_y;
 
 			FastDrawShape shape;
 
@@ -1104,6 +1108,8 @@ void FastInternal::FastDraw::Text(FastVec2 pos, float size, FastFont* font, std:
 			shape.AddTextureId(fast_main->fonts->test_font->texture_id);
 
 			shapes.push_back(shape);
+
+			curr_pos.x = max_x + word_separation;
 		}
 	}
 }
@@ -1730,35 +1736,6 @@ FastInternal::FastGlyph FastInternal::FastFont::GetGlyphByChar(Fuchar c)
 
 	if(index < glyphs.size())
 		ret = glyphs[index];
-
-	return ret;
-}
-
-FastVec2 FastInternal::FastFont::GetStringRenderingSize(std::string text)
-{
-	FastVec2 ret;
-
-	float scale = GetFontScale();
-
-	int ascent, descent, lineGap;
-	stbtt_GetFontVMetrics(&font_info, &ascent, &descent, &lineGap);
-
-	ret.y = ascent * scale;
-
-	for (int i = 0; i < text.size(); ++i)
-	{
-		char curr_word = text[i];
-		char curr_word_next = text[i + 1];
-
-		int advance;
-		stbtt_GetCodepointHMetrics(&font_info, text[i], &advance, 0);
-		advance *= scale;
-
-		int kern_advance = stbtt_GetCodepointKernAdvance(&font_info, curr_word, curr_word_next);
-		kern_advance *= scale;
-
-		ret.x += advance + kern_advance;
-	}
 
 	return ret;
 }
