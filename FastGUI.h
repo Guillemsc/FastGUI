@@ -7,6 +7,12 @@
 #include <queue>
 #include <map>
 #include <assert.h>
+#include <functional>
+
+// STB TRUETYPE DEFINITION
+#define STB_TRUETYPE_IMPLEMENTATION
+#define STBTT_STATIC
+#include "stb_truetype.h"
 
 #define FASTGUI_VERSION "0.01"
 
@@ -43,8 +49,8 @@
 #define FAST_ASSERT(_EXPR, _MSG) assert(_EXPR && _MSG)
 
 // TYPEDEFS
-typedef unsigned int uint;
-typedef unsigned char uchar;
+typedef unsigned int Fuint;
+typedef unsigned char Fuchar;
 
 // CLASSES
 class FastVec2
@@ -158,6 +164,37 @@ public:
 	float h = 0.0f;
 };
 
+class FastBuffer
+{
+public:
+	FastBuffer();
+	FastBuffer(int size);
+	FastBuffer(int width, int heigth);
+	
+	void SetSize(int size);
+	void SetSize(int width, int heigth);
+	void Reset();
+	void Clear();
+
+	void AddData(int data_ptr_pos, Fuchar * data);
+
+	Fuchar* GetBufferData();
+	bool BufferHasData() const;
+
+	int GetWidth();
+	int GetHeight();
+	int GetSize();
+
+	void FlipUpsideDown();
+
+private:
+	Fuchar * buffer = nullptr;
+
+	int width = 0;
+	int heigth = 0;
+	int size = 0;
+};
+
 namespace Fast
 {
 	const char* GetVersion();
@@ -184,18 +221,23 @@ namespace FastInternal
 	struct FastStylePhyisical;
 
 	class FastFonts;
+	class FastFont;
+	class FastGlyph;
 
 	class FastDraw;
 	class FastDrawShape;
 
 	class FastHash;
 
-
 	// General functions
 	void Init();
 	void Quit();
 	void NewFrame();
 	void EndFrame();
+
+	void LoadFont(const char* filepath);
+
+	void SetLoadTexture(std::function<int(Fuchar* data, FastVec2 size)> load_texture);
 
 	std::vector<FastDrawShape> GetShapes();
 	void ClearShapes();
@@ -211,6 +253,8 @@ namespace FastInternal
 		void CleanUp();
 
 		FastWindow* GetCurrWindow();
+
+		std::function<int(Fuchar* data, FastVec2 size)> load_texture;
 
 	public:
 		FastCreation * creation = nullptr;
@@ -351,11 +395,57 @@ namespace FastInternal
 	// FAST FONTS
 	//-----------------------------------------------------------------------------
 
+	class FastFont
+	{
+	public:
+		FastFont(stbtt_fontinfo font_info);
+		~FastFont();
+
+		FastGlyph GetGlyphByChar(Fuchar c);
+		FastVec2 GetStringRenderingSize(std::string text);
+		float GetFontScale();
+
+	public:
+		Fuchar* texture_data = nullptr;
+		Fuint texture_id = 0;
+		FastVec2 size = FastVec2(0, 0);
+
+		std::vector<FastGlyph> glyphs;
+
+	private:
+	
+
+	private:
+		stbtt_fontinfo font_info;
+		int		       font_size = 24;
+	};
+
+	class FastGlyph
+	{
+	public:
+		FastGlyph();
+
+		FastVec2 uvs_x0;
+		FastVec2 uvs_y0;
+		FastVec2 uvs_x1;
+		FastVec2 uvs_y1;
+	};
+
 	class FastFonts
 	{
 	public:
 		FastFonts();
 		~FastFonts();
+
+		FastFont* LoadFont(const char* path);
+
+		FastFont* test_font = nullptr;
+
+	private:
+		FastVec2 TexturePosToUV(FastVec2 texture_size, FastVec2 pos);
+
+	private:
+		std::vector<FastFont*> fonts;
 	};
 
 	// ----------------------------------------------------------------------------
@@ -370,12 +460,20 @@ namespace FastInternal
 		 FastDraw();
 		~FastDraw();
 
+		// Basics
 		void Line(FastVec2 start, FastVec2 end, FastColour colour);
 		void Quad(FastVec2 pos, FastVec2 size, FastColour colour);
+		void Circle(FastVec2 pos, float radius, FastColour colour);
 		void CircleQuarter(FastVec2 pos, float radius, float starting_angle, float roundness, FastColour colour);
+		void ImageQuad(FastVec2 pos, FastVec2 size, Fuint id);
+
+		// Composed
 		void RoundedQuad(FastVec2 pos, FastVec2 size, float round_radius, float roundness, FastColour colour);
 		void TopRoundedQuad(FastVec2 pos, FastVec2 size, float round_radius, float roundness, FastColour colour);
-		void BezierQuad(FastVec2 pos, FastVec2 size, FastVec2 p1, FastVec2 p2);
+
+		void Text(FastVec2 pos, float size, FastFont* font, std::string text);
+
+		void BezierQuad(FastVec2 pos, FastVec2 size, FastVec2 p1, FastVec2 p2); // Not working
 
 		std::vector<FastDrawShape> GetShapes() const;
 		void ClearShapes();
@@ -390,35 +488,41 @@ namespace FastInternal
 	public:
 		FastDrawShape();
 
-		void AddPoint(FastVec2 point_pos);
+		void AddPoint(FastVec2 point_pos, FastVec2 uvs = FastVec2(-1, -1));
+		void AddTextureId(Fuint id);
 		void Finish(FastColour colour);
 		void Clear();
 
-		uint* GetIndices();
-		uint GetIndicesCount();
+		Fuint* GetIndices();
+		Fuint GetIndicesCount();
 		float* GetVertices();
 		float* GetColours();
 		float* GetUvs();
 		float* GetVerticesColourUvs();
 
-		uint Offset();
-		uint VerticesOffset() const;
-		uint VerticesSize() const;
-		uint ColourOffset() const;
-		uint ColoursSize() const;
-		uint UvsOffset() const;
-		uint UvsSize() const;
+		Fuint GetTextureId();
+
+		Fuint Offset();
+		Fuint VerticesOffset() const;
+		Fuint VerticesSize() const;
+		Fuint ColourOffset() const;
+		Fuint ColoursSize() const;
+		Fuint UvsOffset() const;
+		Fuint UvsSize() const;
 
 	private:
-		std::vector<uint> indices;
+		std::vector<Fuint> indices;
 		std::vector<float> vertices;
 		std::vector<float> colours;
 		std::vector<float> uvs;
+		                
+		Fuint              texture_id = 0;
 
 		std::vector<float> vertices_colour_uvs;
 
 		bool finished = false;
 		std::vector<FastVec2> points;
+		std::vector<FastVec2> points_uvs;
 
 		FastVec4 quad_size;
 	};

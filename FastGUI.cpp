@@ -325,6 +325,107 @@ void FastColour::operator/=(const FastColour & vec)
 		a /= vec.a;
 }
 
+FastBuffer::FastBuffer()
+{
+}
+
+FastBuffer::FastBuffer(int size)
+{
+	SetSize(size);
+}
+
+FastBuffer::FastBuffer(int width, int height)
+{
+	SetSize(width, height);
+}
+
+void FastBuffer::SetSize(int _size)
+{
+	Clear();
+
+	size = _size * sizeof(Fuchar);
+
+	buffer = new Fuchar[size];
+
+	Reset();
+
+	size = _size * sizeof(Fuchar);
+}
+
+void FastBuffer::SetSize(int _width, int _heigth)
+{
+	SetSize(_width * _heigth);
+
+	width = _width;
+	heigth = _heigth;
+}
+
+void FastBuffer::Reset()
+{
+	if (buffer != nullptr)
+	{
+		memset(buffer, 1, size);
+	}
+}
+
+void FastBuffer::Clear()
+{
+	if (buffer != nullptr)
+		FAST_DEL_ARRAY(buffer);
+
+	buffer = nullptr;
+}
+
+void FastBuffer::AddData(int data_ptr_pos, Fuchar * data)
+{
+	Fuchar* tmp_buffer_ptr = buffer;
+
+	tmp_buffer_ptr += data_ptr_pos;
+
+	memcpy(tmp_buffer_ptr, data, sizeof(data));
+}
+
+Fuchar * FastBuffer::GetBufferData()
+{
+	return buffer;
+}
+
+bool FastBuffer::BufferHasData() const
+{
+	return buffer != nullptr;
+}
+
+int FastBuffer::GetWidth()
+{
+	return width;
+}
+
+int FastBuffer::GetHeight()
+{
+	return heigth;
+}
+
+int FastBuffer::GetSize()
+{
+	return size;
+}
+
+void FastBuffer::FlipUpsideDown()
+{
+	Fuint rows = heigth / 2; // Iterate only half the buffer to get a full flip
+	Fuchar * tempRow = new Fuchar[width * sizeof(Fuchar)];
+
+	for (unsigned rowIndex = 0; rowIndex < rows; rowIndex++)
+	{
+		memcpy(tempRow, buffer + rowIndex * width, width * sizeof(Fuchar));
+		memcpy(buffer + rowIndex * width, buffer + (heigth - rowIndex - 1) * width, width * sizeof(Fuchar));
+		memcpy(buffer + (heigth - rowIndex - 1) * width, tempRow, width * sizeof(Fuchar));
+	}
+
+	FAST_DEL_ARRAY(tempRow);
+}
+
+
 const char * Fast::GetVersion()
 {
 	return FASTGUI_VERSION;
@@ -399,10 +500,16 @@ void FastInternal::NewFrame()
 
 		fast_main->draw->CircleQuarter(FastVec2(200, 200), 50, 0, 1, FastColour(1, 1, 1));
 
-		fast_main->draw->RoundedQuad(FastVec2(300, 300), FastVec2(300, 100), 20, 10, FastColour(0.2, 0.2, 0.2));
-		fast_main->draw->TopRoundedQuad(FastVec2(300, 300), FastVec2(300, 20), 20, 10, FastColour(0.3, 0.3, 0.3));
+		fast_main->draw->RoundedQuad(FastVec2(300, 300), FastVec2(300, 100), 10, 10, FastColour(0.2, 0.2, 0.2));
+		//fast_main->draw->TopRoundedQuad(FastVec2(300, 300), FastVec2(300, 100), 150, 10, FastColour(0.3, 0.3, 0.3));
 
 		fast_main->draw->BezierQuad(FastVec2(200, 200), FastVec2(10, 10), FastVec2(0.8f, 0.0f), FastVec2(0.8f, 0.0f));
+
+		fast_main->draw->Circle(FastVec2(400, 200), 10, FastColour(0.2, 0.2, 0.2));
+
+		fast_main->draw->ImageQuad(FastVec2(30, 30), FastVec2(1280 - 130 , 720 - 60), 1);
+
+		fast_main->draw->Text(FastVec2(100, 100), 100, fast_main->fonts->test_font, "!");
 	}
 }
 
@@ -412,6 +519,19 @@ void FastInternal::EndFrame()
 	{
 		fast_main->creation->RemoveDeadElements();
 	}
+}
+
+void FastInternal::LoadFont(const char * filepath)
+{
+	if (FastInternal::Inited())
+	{
+		fast_main->fonts->LoadFont(filepath);
+	}
+}
+
+void FastInternal::SetLoadTexture(std::function<int(Fuchar*data, FastVec2 size)> _load_texture)
+{
+	fast_main->load_texture = _load_texture;
 }
 
 std::vector<FastInternal::FastDrawShape> FastInternal::GetShapes()
@@ -661,6 +781,128 @@ FastInternal::FastFonts::~FastFonts()
 {
 }
 
+FastInternal::FastFont* FastInternal::FastFonts::LoadFont(const char * path)
+{
+	FastFont* ret = nullptr;
+
+	stbtt_fontinfo font_info;
+
+	/* load font file */
+	long size;
+	unsigned char* fontBuffer;
+
+	FILE* fontFile = nullptr;
+	fopen_s(&fontFile, path, "rb");
+	fseek(fontFile, 0, SEEK_END);
+	size = ftell(fontFile); 
+	fseek(fontFile, 0, SEEK_SET);
+
+	fontBuffer = new unsigned char[size];
+
+	fread(fontBuffer, size, 1, fontFile);
+	fclose(fontFile);
+
+	if (stbtt_InitFont(&font_info, fontBuffer, stbtt_GetFontOffsetForIndex(fontBuffer, 0)))
+	{
+		ret = new FastFont(font_info);
+
+		int b_w = 2024;
+		int b_h = 1024 * 1.5f;
+		FastBuffer buffer(b_w, b_h);
+
+		float scale = stbtt_ScaleForPixelHeight(&font_info, 128);
+
+		int ascent, descent, lineGap;
+		stbtt_GetFontVMetrics(&font_info, &ascent, &descent, &lineGap);
+
+		ascent *= scale;
+		descent *= scale;
+		lineGap *= scale;
+
+		int x = 0;
+		int line = 0;
+		for (int i = 0; i < 33; ++i)
+		{
+			int gliph_index = i;
+
+			int c_x1, c_y1, c_x2, c_y2;
+			stbtt_GetGlyphBitmapBox(&font_info, gliph_index, scale, scale, &c_x1, &c_y1, &c_x2, &c_y2);
+
+			int test_ax;
+			stbtt_GetGlyphHMetrics(&font_info, gliph_index, &test_ax, 0);
+			int test_x = x + (test_ax * scale);
+
+			int test_kern = stbtt_GetGlyphKernAdvance(&font_info, gliph_index, gliph_index + 1);
+			test_x += test_kern * scale;
+
+			if (test_x + c_x2 >= b_w)
+			{
+				++line;
+				x = 0;
+			}
+
+			int y = ascent - descent;
+
+			int byteOffset = x + (line * y * b_w);
+
+			stbtt_MakeGlyphBitmap(&font_info, buffer.GetBufferData() + byteOffset, c_x2 - c_x1, c_y2 - c_y1, b_w, scale, scale, gliph_index);
+
+			FastVec2 uvs_x0 = TexturePosToUV(FastVec2(b_w, b_h), FastVec2(x, line * y));
+
+			int ax;
+			stbtt_GetGlyphHMetrics(&font_info, gliph_index, &ax, 0);
+			x += ax * scale;
+
+			int kern;
+			kern = stbtt_GetGlyphKernAdvance(&font_info, gliph_index, gliph_index + 1);
+			x += kern * scale;
+
+			//FastVec2 uvs_y2 = TexturePosToUV(FastVec2(b_w, b_h), FastVec2(x, line * y));
+			//FastVec2 uvs_y2 = TexturePosToUV(FastVec2(b_w, b_h), FastVec2(x, line * y));
+
+			//FastGlyph glyph;
+			//glyph.uvs_x0 = uvs_x0;
+			//glyph.uvs_x1 = uvs_start;
+			//glyph.uvs_y0 = uvs_start;
+			//glyph.uvs_y1 = uvs_y2;
+
+			//ret->glyphs.push_back(glyph);
+		}
+
+		buffer.FlipUpsideDown();
+
+		ret->texture_data = buffer.GetBufferData();
+		ret->size.x = b_w;
+		ret->size.y = b_h;
+		ret->texture_id = fast_main->load_texture(ret->texture_data, ret->size);
+
+		test_font = ret;
+	}
+
+	// --------------------------------------
+
+	return ret;
+}
+
+FastVec2 FastInternal::FastFonts::TexturePosToUV(FastVec2 texture_size, FastVec2 pos)
+{
+	FastVec2 ret;
+
+	float x_percentage = 0;
+	float y_percentage = 0;
+
+	if(texture_size.x != 0)
+		x_percentage = (pos.x) / texture_size.x;
+
+	if (texture_size.y != 0)
+		y_percentage = (pos.y) / texture_size.y;
+
+	ret.x = x_percentage;
+	ret.y = 1 - y_percentage;
+
+	return ret;
+}
+
 FastInternal::FastDraw::FastDraw()
 {
 }
@@ -691,29 +933,88 @@ void FastInternal::FastDraw::Quad(FastVec2 pos, FastVec2 size, FastColour colour
 	shapes.push_back(shape);
 }
 
+void FastInternal::FastDraw::Circle(FastVec2 pos, float radius, FastColour colour)
+{
+	if (radius > 1)
+	{
+		FastInternal::FastDrawShape shape;
+
+		int steps = 50;
+
+		if (radius < 20)
+			steps = radius;
+
+		float angle_add = (float)360 / (float)(steps);
+		float curr_angle = 0;
+
+		shape.AddPoint(FastVec2(pos.x, pos.y));
+
+		for (int i = 0; i < steps + 1; ++i)
+		{
+			float curr_angle_rad = curr_angle * DEGTORAD;
+			int x = cos(curr_angle_rad) * radius;
+			int y = sin(curr_angle_rad) * radius;
+
+			curr_angle -= angle_add;
+
+			shape.AddPoint(FastVec2(pos.x + x, pos.y + y));
+		}
+
+		shape.Finish(colour);
+
+		shapes.push_back(shape);
+	}
+}
+
 void FastInternal::FastDraw::CircleQuarter(FastVec2 pos, float radius, float starting_angle, float roundness, FastColour colour)
 {	
+	if (radius > 1)
+	{
+		FastInternal::FastDrawShape shape;
+
+		int steps = 10;
+
+		if (radius < 20)
+			steps = radius * 0.5f;
+
+		float angle_add = (float)90 / (float)(steps);
+		float curr_angle = -starting_angle;
+
+		shape.AddPoint(FastVec2(pos.x, pos.y));
+
+		for (int i = 0; i < steps + 1; ++i)
+		{
+			float curr_angle_rad = curr_angle * DEGTORAD;
+			int x = cos(curr_angle_rad) * radius;
+			int y = sin(curr_angle_rad) * radius;
+
+			curr_angle -= angle_add;
+
+			shape.AddPoint(FastVec2(pos.x + x, pos.y + y));
+		}
+
+		shape.Finish(colour);
+
+		shapes.push_back(shape);
+	}
+}
+
+void FastInternal::FastDraw::ImageQuad(FastVec2 pos, FastVec2 size, Fuint id)
+{
 	FastInternal::FastDrawShape shape;
 
-	int steps = 8;
+	int min_x = pos.x;
+	int max_x = pos.x + size.x;
+	int min_y = pos.y;
+	int max_y = pos.y + size.y;
 
-	float angle_add = (float)90 / (float)(steps);
-	float curr_angle = -starting_angle;
+	shape.AddPoint(FastVec2(min_x, min_y));
+	shape.AddPoint(FastVec2(min_x, max_y));
+	shape.AddPoint(FastVec2(max_x, max_y));
+	shape.AddPoint(FastVec2(max_x, min_y));
+	shape.Finish(FastColour(1.0f, 0.1f, 0.9f, 1.0f));
 
-	shape.AddPoint(FastVec2(pos.x, pos.y));
-
-	for (int i = 0; i < steps + 1; ++i)
-	{
-		float curr_angle_rad = curr_angle * DEGTORAD;
-		int x = cos(curr_angle_rad) * radius;
-		int y = sin(curr_angle_rad) * radius;
-
-		curr_angle -= angle_add;
-
-		shape.AddPoint(FastVec2(pos.x + x, pos.y + y));
-	}
-
-	shape.Finish(colour);
+	shape.AddTextureId(id);
 
 	shapes.push_back(shape);
 }
@@ -724,6 +1025,12 @@ void FastInternal::FastDraw::RoundedQuad(FastVec2 pos, FastVec2 size, float roun
 	int max_x = pos.x + size.x;
 	int min_y = pos.y;
 	int max_y = pos.y + size.y;
+
+	if (round_radius > size.x * 0.5f)
+		round_radius = size.x * 0.5f;
+
+	if (round_radius > size.y * 0.5f)
+		round_radius = size.y * 0.5f;
 
 	CircleQuarter(FastVec2(min_x + round_radius, min_y + round_radius), round_radius, 90, roundness, colour);
 	CircleQuarter(FastVec2(min_x + round_radius, max_y - round_radius), round_radius, 180, roundness, colour);
@@ -742,11 +1049,40 @@ void FastInternal::FastDraw::TopRoundedQuad(FastVec2 pos, FastVec2 size, float r
 	int min_y = pos.y;
 	int max_y = pos.y + size.y;
 
+	if (round_radius > size.x * 0.5f)
+		round_radius = size.x * 0.5f;
+
 	CircleQuarter(FastVec2(min_x + round_radius, min_y + round_radius), round_radius, 90, roundness, colour);
 	CircleQuarter(FastVec2(max_x - round_radius, min_y + round_radius), round_radius, 360, roundness, colour);
 
-	Quad(FastVec2(min_x, min_y + round_radius), FastVec2(max_x - min_x, (max_y - min_y) - (round_radius)), colour);
 	Quad(FastVec2(min_x + round_radius, min_y), FastVec2((max_x - min_x) - (round_radius * 2), round_radius), colour);
+	Quad(FastVec2(min_x, min_y + round_radius), FastVec2(max_x - min_x, max_y - min_y), colour);
+}
+
+void FastInternal::FastDraw::Text(FastVec2 pos, float size, FastFont* font, std::string text)
+{
+	if (font != nullptr)
+	{
+		for (int i = 0; i < text.size(); ++i)
+		{
+			Fuchar c = text[i];
+
+			FastGlyph glph = font->GetGlyphByChar(c);
+
+			int min_x = pos.x;
+			int max_x = pos.x + size;
+			int min_y = pos.y;
+			int max_y = pos.y + size;
+
+			FastDrawShape shape;
+
+			//shape.AddPoint(FastVec2(min_x, min_y), FastVec2(glph.));
+			//shape.AddPoint(FastVec2(min_x, max_y));
+			//shape.AddPoint(FastVec2(max_x, max_y));
+			//shape.AddPoint(FastVec2(max_x, min_y));
+			//shape.Finish(FastColour(1.0f, 0.1f, 0.9f, 1.0f));
+		}
+	}
 }
 
 void FastInternal::FastDraw::BezierQuad(FastVec2 pos, FastVec2 size, FastVec2 p1, FastVec2 p2)
@@ -817,24 +1153,24 @@ std::string FastInternal::FastHash::GetMD5(std::string text)
 }
 
 // F, G, H and I are basic MD5 functions.
-uint FastInternal::FastHash::F(uint4 x, uint4 y, uint4 z) {
+Fuint FastInternal::FastHash::F(uint4 x, uint4 y, uint4 z) {
 	return x & y | ~x&z;
 }
 
-uint FastInternal::FastHash::G(uint4 x, uint4 y, uint4 z) {
+Fuint FastInternal::FastHash::G(uint4 x, uint4 y, uint4 z) {
 	return x & z | y & ~z;
 }
 
-uint FastInternal::FastHash::H(uint4 x, uint4 y, uint4 z) {
+Fuint FastInternal::FastHash::H(uint4 x, uint4 y, uint4 z) {
 	return x ^ y^z;
 }
 
-uint FastInternal::FastHash::I(uint4 x, uint4 y, uint4 z) {
+Fuint FastInternal::FastHash::I(uint4 x, uint4 y, uint4 z) {
 	return y ^ (x | ~z);
 }
 
 // rotate_left rotates x left n bits.
-uint FastInternal::FastHash::rotate_left(uint4 x, int n) {
+Fuint FastInternal::FastHash::rotate_left(uint4 x, int n) {
 	return (x << n) | (x >> (32 - n));
 }
 
@@ -1075,11 +1411,12 @@ FastInternal::FastDrawShape::FastDrawShape()
 {
 }
 
-void FastInternal::FastDrawShape::AddPoint(FastVec2 point_pos)
+void FastInternal::FastDrawShape::AddPoint(FastVec2 point_pos, FastVec2 uvs)
 {
 	if (!finished)
 	{
 		points.push_back(point_pos);
+		points_uvs.push_back(uvs);
 
 		if (points.size() == 1)
 		{
@@ -1105,6 +1442,11 @@ void FastInternal::FastDrawShape::AddPoint(FastVec2 point_pos)
 	}
 }
 
+void FastInternal::FastDrawShape::AddTextureId(Fuint id)
+{
+	texture_id = id;
+}
+
 void FastInternal::FastDrawShape::Finish(FastColour colour)
 {
 	if (points.size() >= 3)
@@ -1122,6 +1464,7 @@ void FastInternal::FastDrawShape::Finish(FastColour colour)
 			for (int i = 0; i < num_points; i++)
 			{
 				FastVec2 curr_point = points[i];
+				FastVec2 curr_uvs = points_uvs[i];
 
 				vertices.push_back(curr_point.x);
 				vertices.push_back(curr_point.y);
@@ -1133,15 +1476,21 @@ void FastInternal::FastDrawShape::Finish(FastColour colour)
 				colours.push_back(colour.b);
 				colours.push_back(colour.a);
 
-				// Uvs for vertices
-				float x_normalized = curr_point.x - quad_size.x;
-				float y_normalized = curr_point.y - quad_size.y;
+				float x_uv = curr_uvs.x;
+				float y_uv = curr_uvs.y;
 
-				float x_percentage = (x_normalized) / quad_size.w;
-				float y_percentage = (y_normalized) / quad_size.z;
+				if (curr_uvs.x < 0 || curr_uvs.y < 0)
+				{
+					// Uvs for vertices
+					float x_normalized = curr_point.x - quad_size.x;
+					float y_normalized = curr_point.y - quad_size.y;
 
-				float x_uv = x_percentage;
-				float y_uv = 1 - y_percentage;
+					float x_percentage = (x_normalized) / quad_size.w;
+					float y_percentage = (y_normalized) / quad_size.z;
+
+					x_uv = x_percentage;
+					y_uv = 1 - y_percentage;
+				}
 
 				uvs.push_back(x_uv);
 				uvs.push_back(y_uv);
@@ -1176,9 +1525,9 @@ void FastInternal::FastDrawShape::Clear()
 	points.clear();
 }
 
-uint * FastInternal::FastDrawShape::GetIndices()
+Fuint * FastInternal::FastDrawShape::GetIndices()
 {
-	uint* ret = nullptr;
+	Fuint* ret = nullptr;
 
 	if (indices.size() > 0)
 		ret = indices.data();
@@ -1186,7 +1535,7 @@ uint * FastInternal::FastDrawShape::GetIndices()
 	return ret;
 }
 
-uint FastInternal::FastDrawShape::GetIndicesCount()
+Fuint FastInternal::FastDrawShape::GetIndicesCount()
 {
 	return indices.size();
 }
@@ -1231,37 +1580,101 @@ float * FastInternal::FastDrawShape::GetVerticesColourUvs()
 	return ret;
 }
 
-uint FastInternal::FastDrawShape::Offset()
+Fuint FastInternal::FastDrawShape::GetTextureId()
+{
+	return texture_id;
+}
+
+Fuint FastInternal::FastDrawShape::Offset()
 {
 	return 6;
 }
 
-uint FastInternal::FastDrawShape::VerticesOffset() const
+Fuint FastInternal::FastDrawShape::VerticesOffset() const
 {
 	return 0;
 }
 
-uint FastInternal::FastDrawShape::VerticesSize() const
+Fuint FastInternal::FastDrawShape::VerticesSize() const
 {
 	return 3;
 }
 
-uint FastInternal::FastDrawShape::ColourOffset() const
+Fuint FastInternal::FastDrawShape::ColourOffset() const
 {
 	return 3;
 }
 
-uint FastInternal::FastDrawShape::ColoursSize() const
+Fuint FastInternal::FastDrawShape::ColoursSize() const
 {
 	return 4;
 }
 
-uint FastInternal::FastDrawShape::UvsOffset() const
+Fuint FastInternal::FastDrawShape::UvsOffset() const
 {
 	return 7;
 }
 
-uint FastInternal::FastDrawShape::UvsSize() const
+Fuint FastInternal::FastDrawShape::UvsSize() const
 {
 	return 2;
+}
+
+FastInternal::FastFont::FastFont(stbtt_fontinfo _font_info)
+{
+	font_info = _font_info;
+}
+
+FastInternal::FastFont::~FastFont()
+{
+}
+
+FastInternal::FastGlyph FastInternal::FastFont::GetGlyphByChar(Fuchar c)
+{
+	FastGlyph ret;
+
+	int index = stbtt_FindGlyphIndex(&font_info, c);
+
+	if(index < glyphs.size())
+		ret = glyphs[index];
+
+	return ret;
+}
+
+FastVec2 FastInternal::FastFont::GetStringRenderingSize(std::string text)
+{
+	FastVec2 ret;
+
+	float scale = GetFontScale();
+
+	int ascent, descent, lineGap;
+	stbtt_GetFontVMetrics(&font_info, &ascent, &descent, &lineGap);
+
+	ret.y = ascent * scale;
+
+	for (int i = 0; i < text.size(); ++i)
+	{
+		char curr_word = text[i];
+		char curr_word_next = text[i + 1];
+
+		int advance;
+		stbtt_GetCodepointHMetrics(&font_info, text[i], &advance, 0);
+		advance *= scale;
+
+		int kern_advance = stbtt_GetCodepointKernAdvance(&font_info, curr_word, curr_word_next);
+		kern_advance *= scale;
+
+		ret.x += advance + kern_advance;
+	}
+
+	return ret;
+}
+
+float FastInternal::FastFont::GetFontScale()
+{
+	return stbtt_ScaleForPixelHeight(&font_info, font_size);
+}
+
+FastInternal::FastGlyph::FastGlyph()
+{
 }

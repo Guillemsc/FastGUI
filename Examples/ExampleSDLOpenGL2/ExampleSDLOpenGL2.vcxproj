@@ -134,6 +134,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\FastGUI.h" />
+    <ClInclude Include="..\..\stb_truetype.h" />
     <ClInclude Include="SDLOpenGL2Renderer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

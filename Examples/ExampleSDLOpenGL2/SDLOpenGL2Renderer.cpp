@@ -5,6 +5,8 @@
 void Fast_Init()
 {
 	FastInternal::Init();
+	FastInternal::SetLoadTexture(FastInternal::Fast_Internal_LoadTexture);
+	FastInternal::LoadFont("C://Windows//Fonts//arial.ttf");
 }
 
 void Fast_NewFrame()
@@ -53,7 +55,8 @@ void Fast_Render()
 
 		glTexCoordPointer(curr_shape.UvsSize(), GL_FLOAT, sizeof(float) * curr_shape.UvsSize(), curr_shape.GetUvs());
 
-		//glBindTexture(GL_TEXTURE_2D, texture_id);
+		if(curr_shape.GetTextureId() > 0)
+			glBindTexture(GL_TEXTURE_2D, curr_shape.GetTextureId());
 
 		glColorPointer(curr_shape.ColoursSize(), GL_FLOAT, sizeof(float) * curr_shape.ColoursSize(), curr_shape.GetColours());
 
@@ -74,6 +77,10 @@ void Fast_Render()
 	glScissor(last_scissor_box[0], last_scissor_box[1], (GLsizei)last_scissor_box[2], (GLsizei)last_scissor_box[3]);
 }
 
+void FastProcessEvent(SDL_Event * ev)
+{
+}
+
 
 //void FastProcessEvent(SDL_Event * ev)
 //{
@@ -87,4 +94,30 @@ void Fast_EndFrame()
 void Fast_Quit()
 {
 	FastInternal::Quit();
+}
+
+int FastInternal::Fast_Internal_LoadTexture(Fuchar* data, FastVec2 size)
+{
+	int id = 0;
+
+	// Upload texture to graphics system
+	GLint last_texture;
+	glGetIntegerv(GL_TEXTURE_BINDING_2D, &last_texture);
+
+	glGenTextures(1, (GLuint*)&(id));
+	glBindTexture(GL_TEXTURE_2D, id);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+	glPixelStorei( GL_UNPACK_ALIGNMENT, 1);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, size.x, size.y, 0, GL_ALPHA, GL_UNSIGNED_BYTE, data);
+
+	// Restore state
+	glBindTexture(GL_TEXTURE_2D, last_texture);
+
+	return id;
+}
+
+void FastInternal::Fast_Internal_UnloadTexture()
+{
 }
