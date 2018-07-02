@@ -429,7 +429,9 @@ namespace FastInternal
 		FastVec2 uvs_x1;
 		FastVec2 uvs_y1;
 
-		float ratio_x_y = 0.0f;
+		float    ratio_height_down = 0.0f;
+
+		float    ratio_x_y = 0.0f;
 	};
 
 	class FastFonts

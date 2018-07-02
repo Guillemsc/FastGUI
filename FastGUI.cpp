@@ -507,7 +507,7 @@ void FastInternal::NewFrame()
 
 		//fast_main->draw->Circle(FastVec2(400, 200), 10, FastColour(0.2, 0.2, 0.2));
 
-		fast_main->draw->ImageQuad(FastVec2(30, 30), FastVec2(1280 - 130 , 720 - 60), 1);
+		fast_main->draw->ImageQuad(FastVec2(0, 0), FastVec2(1280 - 130 , 720 - 60), 1);
 
 		fast_main->draw->Text(FastVec2(400, 400), 80, fast_main->fonts->test_font, "abcd", 5);
 	}
@@ -806,41 +806,52 @@ FastInternal::FastFont* FastInternal::FastFonts::LoadFont(const char * path)
 	{
 		ret = new FastFont(font_info);
 
-		int b_w = 2024;
-		int b_h = 1024 * 2.0f;
-		FastBuffer buffer(b_w, b_h);
+		int atlas_tex_w = 2024;
+		int atlas_tex_h = 1024 * 1.0f;
+		FastBuffer buffer(atlas_tex_w, atlas_tex_h);
 
 		float scale = stbtt_ScaleForPixelHeight(&font_info, 128);
 
 		int ascent, descent, lineGap;
 		stbtt_GetFontVMetrics(&font_info, &ascent, &descent, &lineGap);
 
-		ascent *= scale;
-		descent *= scale;
-		lineGap *= scale;
+		float scaled_ascent = ascent * scale;
+		float scaled_descent = descent * scale;
+		float scaled_line_gap = lineGap *= scale;
 
-		int total_y = ascent - descent;
+		int total_h = ascent - descent;
+		int scaled_total_h = scaled_ascent - scaled_descent;
 
-		int x = 0;
+		int curr_advance = 0;
 		int line = 0;
-		for (int i = 0; i < 100; ++i)
+		for (int i = 0; i < 200; ++i)
 		{
 			int gliph_index = i;
 
-			int c_x1, c_y1, c_x2, c_y2;
-			stbtt_GetGlyphBitmapBox(&font_info, gliph_index, scale, scale, &c_x1, &c_y1, &c_x2, &c_y2);
+			// Get Glyph bitmap size
+			int x0, y0, x1, y1;
+			stbtt_GetGlyphBitmapBox(&font_info, gliph_index, scale, scale, &x0, &y0, &x1, &y1);
+			int glyph_bm_w = x1 - x0;
+			int glyph_bm_h = y1 - y0;
 
-			int test_ax;
-			stbtt_GetGlyphHMetrics(&font_info, gliph_index, &test_ax, 0);
-			int test_x = x + (test_ax * scale);
+			// Get Glyph advance values
+			int advance;
+			stbtt_GetGlyphHMetrics(&font_info, gliph_index, &advance, 0);
+			advance *= scale;
 
-			int test_kern = stbtt_GetGlyphKernAdvance(&font_info, gliph_index, gliph_index + 1);
-			test_x += test_kern * scale;
+			int kern_advance = stbtt_GetGlyphKernAdvance(&font_info, gliph_index, gliph_index + 1);
+			kern_advance *= scale;
 
-			if (test_x + c_x2 >= b_w)
+			int to_advance = advance + kern_advance;
+
+			// Create a test advance to check glyph texture fiting
+			int test_advance = curr_advance + to_advance;
+
+			// Jump to new line if does not fit texture width
+			if (test_advance + glyph_bm_w >= atlas_tex_w)
 			{
 				++line;
-				x = 0;
+				curr_advance = 0;
 			}
 
 			if (gliph_index == stbtt_FindGlyphIndex(&font_info, 'a'))
@@ -848,44 +859,42 @@ FastInternal::FastFont* FastInternal::FastFonts::LoadFont(const char * path)
 				int stop = 0;
 			}
 
-			int tmp_total = total_y + (c_y1 * 0.5f);
+			int to_down = y1 + (scaled_total_h - glyph_bm_h);
 
-			int byteOffset = x + (line * tmp_total * b_w);
+			int byteOffset = curr_advance + (line * scaled_total_h * atlas_tex_w) + (to_down * atlas_tex_w);
 
-			int gb_x, gb_y, gb_w, gb_h;
-			stbtt_GetGlyphBox(&font_info, gliph_index,  &gb_x, &gb_y, &gb_w, &gb_h);
-			stbtt_MakeGlyphBitmap(&font_info, buffer.GetBufferData() + byteOffset, c_x2 - c_x1, c_y2 - c_y1, b_w, scale, scale, gliph_index);
+			stbtt_MakeGlyphBitmap(&font_info, buffer.GetBufferData() + byteOffset, glyph_bm_w, glyph_bm_h, atlas_tex_w, scale, scale, gliph_index);
 
-			float x0_size_x = x;
-			float x0_size_y = line * tmp_total;
-			FastVec2 uvs_x0 = TexturePosToUV(FastVec2(b_w, b_h), FastVec2(x0_size_x, x0_size_y));
+			//float x0_size_x = x;
+			//float x0_size_y = line * tmp_total;
+			//FastVec2 uvs_x0 = TexturePosToUV(FastVec2(atlas_tex_w, atlas_tex_h), FastVec2(x0_size_x, x0_size_y));
 
-			float y1_size_x = x + c_x2;
-			float y1_size_y = (line * tmp_total) - c_y2 - c_y1;
-			FastVec2 uvs_y1 = TexturePosToUV(FastVec2(b_w, b_h), FastVec2(y1_size_x, y1_size_y));
+			//float y1_size_x = x + c_x2;
+			//float y1_size_y = (line * tmp_total) - c_y2 - c_y1;
+			//FastVec2 uvs_y1 = TexturePosToUV(FastVec2(atlas_tex_w, atlas_tex_h), FastVec2(y1_size_x, y1_size_y));
 
-			FastVec2 uvs_x1 = FastVec2(uvs_y1.x, uvs_x0.y);
-			FastVec2 uvs_y0 = FastVec2(uvs_x0.x, uvs_y1.y);
+			//FastVec2 uvs_x1 = FastVec2(uvs_y1.x, uvs_x0.y);
+			//FastVec2 uvs_y0 = FastVec2(uvs_x0.x, uvs_y1.y);
 
-			float ratio_x_y = 1;
+			//float ratio_x_y = 1;
+			//float ratio_height_down = 1;
 
-			if (gb_w > 0)
-				ratio_x_y = (float)gb_h / (float)gb_w;
+			//if (gb_w > 0)
+			//	ratio_x_y = (float)gb_h / (float)gb_w;
 
-			int ax;
-			stbtt_GetGlyphHMetrics(&font_info, gliph_index, &ax, 0);
-			x += ax * scale;
+			//if (total_y > 0)
+			//	ratio_height_down = (float)gb_h / (float)total_y;
 
-			int kern;
-			kern = stbtt_GetGlyphKernAdvance(&font_info, gliph_index, gliph_index + 1);
-			x += kern * scale;
+			// Advance
+			curr_advance += to_advance;
 
 			FastGlyph glyph;
-			glyph.uvs_x0 = uvs_x0;
+		/*	glyph.uvs_x0 = uvs_x0;
 			glyph.uvs_x1 = uvs_x1;
 			glyph.uvs_y0 = uvs_y0;
 			glyph.uvs_y1 = uvs_y1;
 			glyph.ratio_x_y = ratio_x_y;
+			glyph.ratio_height_down = ratio_height_down;*/
 
 			ret->glyphs.push_back(glyph);
 		}
@@ -893,8 +902,8 @@ FastInternal::FastFont* FastInternal::FastFonts::LoadFont(const char * path)
 		buffer.FlipUpsideDown();
 
 		ret->texture_data = buffer.GetBufferData();
-		ret->size.x = b_w;
-		ret->size.y = b_h;
+		ret->size.x = atlas_tex_w;
+		ret->size.y = atlas_tex_h;
 		ret->texture_id = fast_main->load_texture(ret->texture_data, ret->size);
 
 		test_font = ret;
@@ -1092,10 +1101,13 @@ void FastInternal::FastDraw::Text(FastVec2 pos, float size, FastFont* font, std:
 
 			FastGlyph glph = font->GetGlyphByChar(c);
 
+			int word_height = size * glph.ratio_x_y;
+			int word_down = word_height * glph.ratio_height_down;
+
 			int min_x = curr_pos.x;
 			int max_x = curr_pos.x + size;
-			int min_y = curr_pos.y;
-			int max_y = curr_pos.y + size * glph.ratio_x_y;
+			int min_y = curr_pos.y - word_down;
+			int max_y = curr_pos.y + word_height - word_down;
 
 			FastDrawShape shape;
 
