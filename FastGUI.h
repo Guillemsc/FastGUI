@@ -401,12 +401,14 @@ namespace FastInternal
 		FastFont(stbtt_fontinfo font_info);
 		~FastFont();
 
-		FastGlyph GetGlyphByChar(Fuchar c);
+		void SetFontScale(float set);
 		float GetFontScale();
 
+		FastGlyph GetGlyphByChar(Fuchar c);
+
 	public:
-		Fuchar* texture_data = nullptr;
-		Fuint texture_id = 0;
+		Fuchar*  texture_data = nullptr;
+		Fuint    texture_id = 0;
 		FastVec2 size = FastVec2(0, 0);
 
 		std::vector<FastGlyph> glyphs;
@@ -415,8 +417,8 @@ namespace FastInternal
 	
 
 	private:
-		stbtt_fontinfo font_info;
-		int		       font_size = 24;
+		stbtt_fontinfo info;
+		float		   scale = 0.0f;
 	};
 
 	class FastGlyph
@@ -429,9 +431,17 @@ namespace FastInternal
 		FastVec2 uvs_x1;
 		FastVec2 uvs_y1;
 
-		float    ratio_height_down = 0.0f;
-
 		float    ratio_x_y = 0.0f;
+	};
+
+	enum FastFontRange
+	{
+		FAST_FONT_RANGE_LATIN,
+		FAST_FONT_RANGE_KOREAN,
+		FAST_FONT_RANGE_CHINESE,
+		FAST_FONT_RANGE_JAPANESE,
+		FAST_FONT_RANGE_CYRILLIC,
+		FAST_FONT_RANGE_THAI,
 	};
 
 	class FastFonts
@@ -440,12 +450,20 @@ namespace FastInternal
 		FastFonts();
 		~FastFonts();
 
-		FastFont* LoadFont(const char* path);
+		FastFont* LoadFont(const char* path, int font_size, FastFontRange range = FastFontRange::FAST_FONT_RANGE_LATIN);
 
 		FastFont* test_font = nullptr;
 
 	private:
 		FastVec2 TexturePosToUV(FastVec2 texture_size, FastVec2 pos);
+
+		std::vector<FastVec2> GetBaseGlyphsRanges();
+		std::vector<FastVec2> GetLatinGlyphsRanges();
+		std::vector<FastVec2> GetKoreanGlyphsRanges();
+		std::vector<FastVec2> GetChineseGlyphsRanges();
+		std::vector<FastVec2> GetJapaneseGlyphsRanges();
+		std::vector<FastVec2> GetCyrillicGlyphsRanges();
+		std::vector<FastVec2> GetThaiGlyphsRanges();
 
 	private:
 		std::vector<FastFont*> fonts;
@@ -474,7 +492,8 @@ namespace FastInternal
 		void RoundedQuad(FastVec2 pos, FastVec2 size, float round_radius, float roundness, FastColour colour);
 		void TopRoundedQuad(FastVec2 pos, FastVec2 size, float round_radius, float roundness, FastColour colour);
 
-		void Text(FastVec2 pos, float size, FastFont* font, std::string text, float word_separation);
+		void FontAtlas(FastVec2 pos, FastVec2 size, FastFont* font, FastColour colour);
+		void Text(FastVec2 pos, float size, FastFont* font, std::string text, FastColour colour);
 
 		void BezierQuad(FastVec2 pos, FastVec2 size, FastVec2 p1, FastVec2 p2); // Not working
 

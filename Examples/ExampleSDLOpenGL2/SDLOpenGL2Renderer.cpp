@@ -6,7 +6,7 @@ void Fast_Init()
 {
 	FastInternal::Init();
 	FastInternal::SetLoadTexture(FastInternal::Fast_Internal_LoadTexture);
-	FastInternal::LoadFont("C://Windows//Fonts//arial.ttf");
+	FastInternal::LoadFont("C://Windows//Fonts//Arial.ttf");
 }
 
 void Fast_NewFrame()
