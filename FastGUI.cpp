@@ -507,9 +507,9 @@ void FastInternal::NewFrame()
 
 		//fast_main->draw->Circle(FastVec2(400, 200), 10, FastColour(0.2, 0.2, 0.2));
 
-		fast_main->draw->FontAtlas(FastVec2(0, 0), FastVec2(1280, 720), fast_main->fonts->test_font, FastColour(1, 1, 1, 1));
+		//fast_main->draw->FontAtlas(FastVec2(0, 0), FastVec2(1280, 720), fast_main->fonts->test_font, FastColour(1, 1, 1, 1));
 
-		fast_main->draw->Text(FastVec2(10, 400), 100, fast_main->fonts->test_font, "Hola, me dic guillem @", FastColour(1, 1, 1, 1));
+		fast_main->draw->Text(FastVec2(10, 400), 30, fast_main->fonts->test_font, "Hola, me dic guillem @", FastColour(1, 1, 1, 1));
 	}
 }
 
@@ -525,7 +525,7 @@ void FastInternal::LoadFont(const char * filepath)
 {
 	if (FastInternal::Inited())
 	{
-		fast_main->fonts->LoadFont(filepath, 20, FastInternal::FastFontRange::FAST_FONT_RANGE_LATIN);
+		fast_main->fonts->LoadFont(filepath, 50, FastInternal::FastFontRange::FAST_FONT_RANGE_LATIN);
 	}
 }
 
@@ -1313,7 +1313,8 @@ void FastInternal::FastWindow::Draw()
 {
 	fast_main->draw->RoundedQuad(rect.Pos(), rect.Size(), 10, 10, bg_colour);
 	fast_main->draw->TopRoundedQuad(rect.Pos(), FastVec2(rect.Size().x, 10), 10, 0, FastColour(0.4, 0.4, 0.4, 1));
-	fast_main->draw->Text(FastVec2(rect.Pos().x + 10, rect.Pos().y + 3), 15, fast_main->fonts->test_font, "Window text", FastColour(1, 1, 1, 1));
+	fast_main->draw->Text(FastVec2(rect.Pos().x + 13, rect.Pos().y + 2), 16, fast_main->fonts->test_font, "Window text", FastColour(1, 1, 1, 1));
+	fast_main->draw->Text(FastVec2(0, 0), 10, fast_main->fonts->test_font, "Window text", FastColour(1, 1, 1, 1));
 }
 
 FastInternal::FastHash::FastHash()
