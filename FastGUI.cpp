@@ -545,10 +545,12 @@ void FastInternal::Quit()
 	FAST_DEL(fast_main);
 }
 
-void FastInternal::NewFrame(FastVec2 window_size, FastVec2 mouse_pos)
+void FastInternal::NewFrame(FastVec2 window_size, FastVec2 mouse_pos, float delta_time)
 {
 	if (FastInternal::Inited())
 	{
+		fast_main->io->AddNewFrame(delta_time);
+
 		fast_main->io->SetViewportSize(window_size);
 		fast_main->io->SetMousePos(mouse_pos);
 
@@ -567,7 +569,8 @@ void FastInternal::NewFrame(FastVec2 window_size, FastVec2 mouse_pos)
 
 		//fast_main->draw->FontAtlas(FastVec2(0, 0), FastVec2(1280, 720), fast_main->fonts->test_font, FastColour(1, 1, 1, 1));
 
-		//fast_main->draw->Text(FastVec2(10, 400), 30, fast_main->fonts->test_font, "Hola, me dic guillem @", FastColour(1, 1, 1, 1));
+		std::string frames = std::to_string(fast_main->io->GetFps());
+		fast_main->draw->Text(FastVec2(10, 400), 30, fast_main->fonts->test_font, frames, FastColour(1, 1, 1, 1));
 		//fast_main->draw->RightTraingle(FastVec2(500, 500), 50, FastColour(1, 1, 1, 1));
 	}
 }
@@ -814,6 +817,50 @@ void FastInternal::FastIO::SetMousePos(const FastVec2 & set)
 void FastInternal::FastIO::AddKeyMaping(FastKeyMapping key, Fuint maped_key)
 {
 	key_maping[key] = maped_key;
+}
+
+void FastInternal::FastIO::AddNewFrame(float _delta_time)
+{
+	++frames_since_start;
+	time_since_start_sec += _delta_time;
+	delta_time = _delta_time;
+
+	++frame_counter;
+	frame_counter_ms += _delta_time;
+	if (frame_counter_ms > 1.0f)
+	{
+		last_second_frames = frame_counter;
+		frame_counter = 0;
+		frame_counter_ms = 0.0f;
+	}
+}
+
+Fuint FastInternal::FastIO::GetFramesSinceStart() const
+{
+	return frames_since_start;
+}
+
+float FastInternal::FastIO::GetTimeSinceStartSec() const
+{
+	return time_since_start_sec;
+}
+
+float FastInternal::FastIO::GetDeltaTime() const
+{
+	return delta_time;
+}
+
+Fuint FastInternal::FastIO::GetFps() const
+{
+	return last_second_frames;
+}
+
+float FastInternal::FastIO::GetAvgFps() const
+{
+	if (time_since_start_sec > 0)
+		return (float)frames_since_start / time_since_start_sec;
+	else
+		return 0;
 }
 
 FastInternal::FastStyle::FastStyle()
@@ -1741,6 +1788,7 @@ FastInternal::FastDrawShape::FastDrawShape()
 {
 }
 
+
 void FastInternal::FastDrawShape::AddPoint(FastVec2 point_pos)
 {
 	if (!finished)
@@ -1835,6 +1883,8 @@ void FastInternal::FastDrawShape::Finish(FastColour colour)
 		}
 		// -----------------------------------
 	}
+
+	points.clear();
 }
 
 void FastInternal::FastDrawShape::Finish(FastColour colour, FastVec4 range_uvs)
@@ -1933,7 +1983,7 @@ void FastInternal::FastDrawShape::SetClippingRect(const FastRect & rect)
 		uses_clipping_rect = true;
 }
 
-Fuint * FastInternal::FastDrawShape::GetIndices()
+Fuint * FastInternal::FastDrawShape::GetIndicesPtr()
 {
 	Fuint* ret = nullptr;
 
@@ -1943,12 +1993,17 @@ Fuint * FastInternal::FastDrawShape::GetIndices()
 	return ret;
 }
 
+std::vector<Fuint> FastInternal::FastDrawShape::GetIndices()
+{
+	return indices;
+}
+
 Fuint FastInternal::FastDrawShape::GetIndicesCount()
 {
 	return indices.size();
 }
 
-float * FastInternal::FastDrawShape::GetVertices()
+float * FastInternal::FastDrawShape::GetVerticesPtr()
 {
 	float* ret = nullptr;
 
@@ -1958,7 +2013,12 @@ float * FastInternal::FastDrawShape::GetVertices()
 	return ret;
 }
 
-float * FastInternal::FastDrawShape::GetColours()
+std::vector<float> FastInternal::FastDrawShape::GetVertices()
+{
+	return vertices;
+}
+
+float * FastInternal::FastDrawShape::GetColoursPtr()
 {
 	float* ret = nullptr;
 
@@ -1968,7 +2028,12 @@ float * FastInternal::FastDrawShape::GetColours()
 	return ret;
 }
 
-float * FastInternal::FastDrawShape::GetUvs()
+std::vector<float> FastInternal::FastDrawShape::GetColours()
+{
+	return colours;
+}
+
+float * FastInternal::FastDrawShape::GetUvsPtr()
 {
 	float* ret = nullptr;
 
@@ -1978,7 +2043,12 @@ float * FastInternal::FastDrawShape::GetUvs()
 	return ret;
 }
 
-float * FastInternal::FastDrawShape::GetVerticesColourUvs()
+std::vector<float> FastInternal::FastDrawShape::GetUvs()
+{
+	return uvs;
+}
+
+float * FastInternal::FastDrawShape::GetVerticesColourUvsPtr()
 {
 	float* ret = nullptr;
 
@@ -1986,6 +2056,11 @@ float * FastInternal::FastDrawShape::GetVerticesColourUvs()
 		ret = vertices_colour_uvs.data();
 
 	return ret;
+}
+
+std::vector<float> FastInternal::FastDrawShape::GetVerticesColoursUvs()
+{
+	return vertices_colour_uvs;
 }
 
 bool FastInternal::FastDrawShape::GetUsesClippingRect() const
@@ -2075,3 +2150,4 @@ float FastInternal::FastFont::GetFontScale()
 FastInternal::FastGlyph::FastGlyph()
 {
 }
+

@@ -239,7 +239,7 @@ namespace FastInternal
 	// General implementation functions
 	void Init();
 	void Quit();
-	void NewFrame(FastVec2 window_size, FastVec2 mouse_pos);
+	void NewFrame(FastVec2 window_size, FastVec2 mouse_pos, float delta_time);
 	void EndFrame();
 	void SetLoadTexture(std::function<int(Fuchar* data, FastVec2 size)> load_texture);
 
@@ -348,11 +348,19 @@ namespace FastInternal
 
 		void SetViewportSize(const FastVec2& set);
 		FastVec2 GetViewportSize() const;
+
 		bool GetKeyDown(const FastKeyMapping& key) const;
 
 		void SetMousePos(const FastVec2& set);
 
 		void AddKeyMaping(FastKeyMapping key, Fuint maped_key);
+
+		void AddNewFrame(float delta_time);
+		Fuint GetFramesSinceStart() const;
+		float GetTimeSinceStartSec() const;
+		float GetDeltaTime() const;
+		float GetAvgFps() const;
+		Fuint GetFps() const;
 
 	private:
 		FastVec2             viewport_size;
@@ -365,6 +373,14 @@ namespace FastInternal
 		FastMouseCenterState mouse_center_button = FastMouseCenterState::FAST_MOUSE_CENTER_STATE_IDLE;
 
 		FastVec2			 mouse_pos;
+
+		float			     time_since_start_sec = 0.0f;
+		Fuint				 frames_since_start = 0;
+		float				 delta_time = 0.0f;		
+
+		int					 frame_counter = 0;
+		float				 frame_counter_ms = 0.0f;
+		int					 last_second_frames = 60;
 	};
 	
 	// ----------------------------------------------------------------------------
@@ -557,12 +573,17 @@ namespace FastInternal
 		void Clear();
 		void SetClippingRect(const FastRect& rect);
 
-		Fuint* GetIndices();
+		Fuint* GetIndicesPtr();
+		std::vector<Fuint> GetIndices();
 		Fuint GetIndicesCount();
-		float* GetVertices();
-		float* GetColours();
-		float* GetUvs();
-		float* GetVerticesColourUvs();
+		float* GetVerticesPtr();
+		std::vector<float> GetVertices();
+		float* GetColoursPtr();
+		std::vector<float> GetColours();
+		float* GetUvsPtr();
+		std::vector<float> GetUvs();
+		float* GetVerticesColourUvsPtr();
+		std::vector<float> GetVerticesColoursUvs();
 
 		bool GetUsesClippingRect() const;
 		FastRect GetClippingRect() const;

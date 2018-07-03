@@ -2,6 +2,8 @@
 
 #include "..\..\FastGUI.h"
 
+static double time_since_start_sec = 0;
+
 void Fast_Init()
 {
 	FastInternal::Init();
@@ -34,7 +36,12 @@ void Fast_NewFrame(SDL_Window* window)
 	int mouse_x, mouse_y = 0;
 	SDL_GetMouseState(&mouse_x, &mouse_y);
 
-	FastInternal::NewFrame(FastVec2(size_x, size_y), FastVec2(mouse_x, mouse_y));
+	Uint32 time = SDL_GetTicks();
+	double current_time = time / 1000.0;
+	float delta_dime = current_time - time_since_start_sec;
+	time_since_start_sec = current_time;
+
+	FastInternal::NewFrame(FastVec2(size_x, size_y), FastVec2(mouse_x, mouse_y), delta_dime);
 }
 
 void Fast_Render()
@@ -76,14 +83,14 @@ void Fast_Render()
 	{
 		FastInternal::FastDrawShape curr_shape = shapes[i];
 
-		glVertexPointer(curr_shape.VerticesSize(), GL_FLOAT, sizeof(float) * curr_shape.VerticesSize(), curr_shape.GetVertices());
+		glVertexPointer(curr_shape.VerticesSize(), GL_FLOAT, sizeof(float) * curr_shape.VerticesSize(), curr_shape.GetVerticesPtr());
 
-		glTexCoordPointer(curr_shape.UvsSize(), GL_FLOAT, sizeof(float) * curr_shape.UvsSize(), curr_shape.GetUvs());
+		glTexCoordPointer(curr_shape.UvsSize(), GL_FLOAT, sizeof(float) * curr_shape.UvsSize(), curr_shape.GetUvsPtr());
 
 		if(curr_shape.GetTextureId() > 0)
 			glBindTexture(GL_TEXTURE_2D, curr_shape.GetTextureId());
 
-		glColorPointer(curr_shape.ColoursSize(), GL_FLOAT, sizeof(float) * curr_shape.ColoursSize(), curr_shape.GetColours());
+		glColorPointer(curr_shape.ColoursSize(), GL_FLOAT, sizeof(float) * curr_shape.ColoursSize(), curr_shape.GetColoursPtr());
 
 		if (curr_shape.GetUsesClippingRect())
 		{
@@ -91,7 +98,7 @@ void Fast_Render()
 			glScissor(clipping.x, viewport.y - clipping.yh(), clipping.w, viewport.y - clipping.y);
 		}
 
-		glDrawElements(GL_TRIANGLES, curr_shape.GetIndicesCount(), GL_UNSIGNED_INT, curr_shape.GetIndices());
+		glDrawElements(GL_TRIANGLES, curr_shape.GetIndicesCount(), GL_UNSIGNED_INT, curr_shape.GetIndicesPtr());
 
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
