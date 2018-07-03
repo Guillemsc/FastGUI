@@ -255,6 +255,11 @@ bool FastRect::Contains(FastVec2 point)
 	return false;
 }
 
+void FastRect::Scissor(FastRect rec)
+{
+	
+}
+
 FastColour::FastColour()
 {
 }
@@ -330,6 +335,38 @@ void FastColour::operator/=(const FastColour & vec)
 
 	if (vec.a != 0)
 		a /= vec.a;
+}
+
+FastRect::FastRect()
+{
+	x = 0;
+	y = 0;
+	w = 0;
+	h = 0;
+}
+
+FastRect::FastRect(float _x, float _y, float _w, float _h)
+{
+	x = _x;
+	y = _y;
+	w = _w;
+	h = _h;
+}
+
+FastRect::FastRect(const FastVec4 & vec)
+{
+	x = vec.x;
+	y = vec.y;
+	w = vec.w;
+	h = vec.z;
+}
+
+FastRect::FastRect(const FastVec2 & pos, const FastVec2 size)
+{
+	x = pos.x;
+	y = pos.y;
+	w = size.x;
+	h = size.y;
 }
 
 FastBuffer::FastBuffer()
@@ -508,19 +545,21 @@ void FastInternal::Quit()
 	FAST_DEL(fast_main);
 }
 
-void FastInternal::NewFrame(FastVec2 window_size)
+void FastInternal::NewFrame(FastVec2 window_size, FastVec2 mouse_pos)
 {
 	if (FastInternal::Inited())
 	{
-		fast_main->io->SetWindowSize(window_size);
+		fast_main->io->SetViewportSize(window_size);
+		fast_main->io->SetMousePos(mouse_pos);
+
+		fast_main->draw->ClearShapes();
 
 		// Debug ---------------------------------------------------------
-		fast_main->draw->ClearShapes();
 
 		//fast_main->draw->CircleQuarter(FastVec2(200, 200), 50, 0, 1, FastColour(1, 1, 1));
 
 		//fast_main->draw->RoundedQuad(FastVec2(230, 50), FastVec2(300, 200), 0, FastColour(1, 1, 1));
-		fast_main->draw->TopRoundedQuad(FastVec2(230, 50), FastVec2(300, 200), 10, FastColour(1, 1, 1));
+		//fast_main->draw->TopRoundedQuad(FastVec2(230, 50), FastVec2(300, 200), 10, FastColour(1, 1, 1));
 
 		//fast_main->draw->BezierQuad(FastVec2(200, 200), FastVec2(10, 10), FastVec2(0.8f, 0.0f), FastVec2(0.8f, 0.0f));
 
@@ -528,8 +567,8 @@ void FastInternal::NewFrame(FastVec2 window_size)
 
 		//fast_main->draw->FontAtlas(FastVec2(0, 0), FastVec2(1280, 720), fast_main->fonts->test_font, FastColour(1, 1, 1, 1));
 
-		fast_main->draw->Text(FastVec2(10, 400), 30, fast_main->fonts->test_font, "Hola, me dic guillem @", FastColour(1, 1, 1, 1));
-		fast_main->draw->RightTraingle(FastVec2(500, 500), 50, FastColour(1, 1, 1, 1));
+		//fast_main->draw->Text(FastVec2(10, 400), 30, fast_main->fonts->test_font, "Hola, me dic guillem @", FastColour(1, 1, 1, 1));
+		//fast_main->draw->RightTraingle(FastVec2(500, 500), 50, FastColour(1, 1, 1, 1));
 	}
 }
 
@@ -566,6 +605,26 @@ void FastInternal::ClearShapes()
 	}
 }
 
+FastVec2 FastInternal::GetViewport()
+{
+	FastVec2 ret;
+
+	if (FastInternal::Inited())
+	{
+		ret = fast_main->io->GetViewportSize();
+	}
+
+	return ret;
+}
+
+void FastInternal::SetKeyMapping(FastInternal::FastKeyMapping fast_key, Fuint maping_index)
+{
+	if (FastInternal::Inited())
+	{
+		fast_main->io->AddKeyMaping(fast_key, maping_index);
+	}
+}
+
 FastInternal::FastMain::FastMain()
 {
 }
@@ -594,11 +653,6 @@ void FastInternal::FastMain::CleanUp()
 	FAST_DEL(hash);
 }
 
-FastInternal::FastWindow * FastInternal::FastMain::GetCurrWindow()
-{
-	return nullptr;
-}
-
 bool FastInternal::Inited()
 {
 	if (fast_main == nullptr)
@@ -607,26 +661,6 @@ bool FastInternal::Inited()
 		return false;
 	}
 	return true;
-}
-
-FastRect::FastRect()
-{
-}
-
-FastRect::FastRect(float _x, float _y, float _w, float _h)
-{
-	x = _x;
-	y = _y;
-	w = _w;
-	h = _h;
-}
-
-FastRect::FastRect(const FastVec4 & vec)
-{
-	x = vec.x;
-	y = vec.y;
-	w = vec.w;
-	h = vec.z;
 }
 
 FastInternal::FastCreation::FastCreation()
@@ -757,9 +791,29 @@ FastInternal::FastIO::~FastIO()
 {
 }
 
-void FastInternal::FastIO::SetWindowSize(const FastVec2 & set)
+void FastInternal::FastIO::SetViewportSize(const FastVec2 & set)
 {
-	window_size = set;
+	viewport_size = set;
+}
+
+FastVec2 FastInternal::FastIO::GetViewportSize() const
+{
+	return viewport_size;
+}
+
+bool FastInternal::FastIO::GetKeyDown(const FastKeyMapping & key) const
+{
+	return false;
+}
+
+void FastInternal::FastIO::SetMousePos(const FastVec2 & set)
+{
+	mouse_pos = set;
+}
+
+void FastInternal::FastIO::AddKeyMaping(FastKeyMapping key, Fuint maped_key)
+{
+	key_maping[key] = maped_key;
 }
 
 FastInternal::FastStyle::FastStyle()
@@ -1073,6 +1127,18 @@ FastInternal::FastDraw::~FastDraw()
 {
 }
 
+void FastInternal::FastDraw::DisableClipping()
+{
+	clipping_enabled = false;
+	curr_clipping_rect = FastRect();
+}
+
+void FastInternal::FastDraw::SetClipping(const FastRect & set)
+{
+	clipping_enabled = true;
+	curr_clipping_rect = set;
+}
+
 void FastInternal::FastDraw::Line(FastVec2 start, FastVec2 end, FastColour colour)
 {
 }
@@ -1091,6 +1157,9 @@ void FastInternal::FastDraw::Quad(FastVec2 pos, FastVec2 size, FastColour colour
 	shape.AddPoint(FastVec2(max_x, max_y));
 	shape.AddPoint(FastVec2(max_x, min_y));
 	shape.Finish(colour);
+
+	if (clipping_enabled)
+		shape.SetClippingRect(curr_clipping_rect);
 
 	shapes.push_back(shape);
 }
@@ -1123,6 +1192,9 @@ void FastInternal::FastDraw::Circle(FastVec2 pos, float radius, FastColour colou
 		}
 
 		shape.Finish(colour);
+
+		if (clipping_enabled)
+			shape.SetClippingRect(curr_clipping_rect);
 
 		shapes.push_back(shape);
 	}
@@ -1157,6 +1229,9 @@ void FastInternal::FastDraw::CircleQuarter(FastVec2 pos, float radius, float sta
 
 		shape.Finish(colour);
 
+		if (clipping_enabled)
+			shape.SetClippingRect(curr_clipping_rect);
+
 		shapes.push_back(shape);
 	}
 }
@@ -1178,6 +1253,9 @@ void FastInternal::FastDraw::ImageQuad(FastVec2 pos, FastVec2 size, Fuint id)
 
 	shape.AddTextureId(id);
 
+	if (clipping_enabled)
+		shape.SetClippingRect(curr_clipping_rect);
+
 	shapes.push_back(shape);
 }
 
@@ -1195,6 +1273,9 @@ void FastInternal::FastDraw::DownTraingle(FastVec2 pos, float size, FastColour c
 
 	shape.Finish(colour);
 
+	if (clipping_enabled)
+		shape.SetClippingRect(curr_clipping_rect);
+
 	shapes.push_back(shape);
 }
 
@@ -1211,6 +1292,9 @@ void FastInternal::FastDraw::RightTraingle(FastVec2 pos, float size, FastColour 
 	shape.AddPoint(point3);
 
 	shape.Finish(colour);
+
+	if (clipping_enabled)
+		shape.SetClippingRect(curr_clipping_rect);
 
 	shapes.push_back(shape);
 }
@@ -1272,6 +1356,9 @@ void FastInternal::FastDraw::FontAtlas(FastVec2 pos, FastVec2 size, FastFont * f
 	shape.AddTextureId(font->texture_id);
 	shape.Finish(colour);
 
+	if (clipping_enabled)
+		shape.SetClippingRect(curr_clipping_rect);
+
 	shapes.push_back(shape);
 }
 
@@ -1305,6 +1392,9 @@ void FastInternal::FastDraw::Text(FastVec2 pos, float size, FastFont* font, std:
 				shape.Finish(colour, FastVec4(glph.uvs_x0.x, glph.uvs_x0.y, glph.uvs_y1.x, glph.uvs_y1.y));
 
 				shape.AddTextureId(fast_main->fonts->test_font->texture_id);
+
+				if (clipping_enabled)
+					shape.SetClippingRect(curr_clipping_rect);
 
 				shapes.push_back(shape);
 
@@ -1362,11 +1452,16 @@ FastInternal::FastWindow::~FastWindow()
 
 void FastInternal::FastWindow::Draw()
 {
+	fast_main->draw->SetClipping(FastRect(rect.Pos(), rect.Size()));
+
 	fast_main->draw->RoundedQuad(rect.Pos(), rect.Size(), 10, bg_colour);
 	fast_main->draw->TopRoundedQuad(rect.Pos(), FastVec2(rect.Size().x, 20), 10, FastColour(0.4, 0.4, 0.4, 1));
-	fast_main->draw->Text(FastVec2(rect.Pos().x + 27, rect.Pos().y + 2), 16, fast_main->fonts->test_font, "Window text", FastColour(1, 1, 1, 1));
 	fast_main->draw->DownTraingle(FastVec2(rect.Pos().x + 10, rect.Pos().y + 6), 10, FastColour(1, 1, 1, 1));
-	fast_main->draw->Text(FastVec2(0, 0), 10, fast_main->fonts->test_font, "Window text", FastColour(1, 1, 1, 1));
+
+	fast_main->draw->SetClipping(FastRect(FastVec2(rect.Pos().x + 27, rect.Pos().y + 2), FastVec2(rect.Size().x - 27, rect.Size().y)));
+	fast_main->draw->Text(FastVec2(rect.Pos().x + 27, rect.Pos().y + 2), 16, fast_main->fonts->test_font, "Window text", FastColour(1, 1, 1, 1));
+
+	fast_main->draw->DisableClipping();
 }
 
 FastInternal::FastHash::FastHash()
@@ -1830,6 +1925,14 @@ void FastInternal::FastDrawShape::Clear()
 	points.clear();
 }
 
+void FastInternal::FastDrawShape::SetClippingRect(const FastRect & rect)
+{
+	clipping_rect = rect;
+
+	if (clipping_rect.w > 0 && clipping_rect.h > 0)
+		uses_clipping_rect = true;
+}
+
 Fuint * FastInternal::FastDrawShape::GetIndices()
 {
 	Fuint* ret = nullptr;
@@ -1883,6 +1986,16 @@ float * FastInternal::FastDrawShape::GetVerticesColourUvs()
 		ret = vertices_colour_uvs.data();
 
 	return ret;
+}
+
+bool FastInternal::FastDrawShape::GetUsesClippingRect() const
+{
+	return uses_clipping_rect;
+}
+
+FastRect FastInternal::FastDrawShape::GetClippingRect() const
+{
+	return clipping_rect;
 }
 
 Fuint FastInternal::FastDrawShape::GetTextureId()

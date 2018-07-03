@@ -75,11 +75,16 @@ int main(int argc, char ** argv)
 		SDL_Event event;
 		while (SDL_PollEvent(&event))
 		{
+			FastProcessEvent(&event);
+
 			if (event.type == SDL_QUIT)
 				done = true;
 		}
 
 		Fast::Window("pene", FastVec2(50, 50));
+		Fast::Window("pene1", FastVec2(1000, 50));
+		Fast::Window("pene2", FastVec2(50, 500));
+		Fast::Window("pene3", FastVec2(1000, 500));
 		
 		// End render
 		glViewport(0, 0, size_x, size_y);

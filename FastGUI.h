@@ -146,6 +146,7 @@ public:
 	FastRect();
 	FastRect(float x, float y, float w, float h);
 	FastRect(const FastVec4& vec);
+	FastRect(const FastVec2& pos, const FastVec2 size);
 
 	inline float xw();
 	inline float yh();
@@ -157,6 +158,7 @@ public:
 	bool Overlaps(FastRect rec);
 	bool Contains(FastRect rec);
 	bool Contains(FastVec2 point);
+	void Scissor(FastRect rec);
 
 public:
 	float x = 0.0f;
@@ -211,6 +213,8 @@ namespace Fast
 namespace FastInternal
 {
 	// Forward declarations
+	class FastMain;
+
 	class FastCreation;
 	enum  FastElementType;
 	class FastElement;
@@ -232,16 +236,20 @@ namespace FastInternal
 
 	class FastHash;
 
-	// General functions
+	// General implementation functions
 	void Init();
 	void Quit();
-	void NewFrame(FastVec2 window_size);
+	void NewFrame(FastVec2 window_size, FastVec2 mouse_pos);
 	void EndFrame();
-
 	void SetLoadTexture(std::function<int(Fuchar* data, FastVec2 size)> load_texture);
 
+	// Shapes
 	std::vector<FastDrawShape> GetShapes();
 	void ClearShapes();
+
+	// IO
+	FastVec2 GetViewport();
+	void SetKeyMapping(FastInternal::FastKeyMapping fast_key, Fuint maping_index);
 
 	// Main module
 	class FastMain
@@ -252,8 +260,6 @@ namespace FastInternal
 
 		void Start();
 		void CleanUp();
-
-		FastWindow* GetCurrWindow();
 
 		std::function<int(Fuchar* data, FastVec2 size)> load_texture;
 
@@ -305,17 +311,19 @@ namespace FastInternal
 		FAST_KEY_TAB,
 		FAST_KEY_LEFT_ARROW,
 		FAST_KEY_RIGHT_ARROW,
+		FAST_KEY_UP_ARROW,
+		FAST_KEY_DOWN_ARROW,
 		FAST_KEY_PAGE_UP,
 		FAST_KEY_PAGE_DOWN,
-		FAST_KEY_PAGE_DELETE,
-		FAST_KEY_PAGE_BACKSPACE,
-		FAST_KEY_PAGE_ENTER,
-		FAST_KEY_PAGE_ESCAPE,
-		FAST_KEY_PAGE_C,
-		FAST_KEY_PAGE_V,
-		FAST_KEY_PAGE_X,
-		FAST_KEY_PAGE_Z,
-		FAST_KEY_PAGE_Y,
+		FAST_KEY_DELETE,
+		FAST_KEY_BACKSPACE,
+		FAST_KEY_ENTER,
+		FAST_KEY_ESCAPE,
+		FAST_KEY_C,
+		FAST_KEY_V,
+		FAST_KEY_X,
+		FAST_KEY_Z,
+		FAST_KEY_Y,
 		FAST_KEY_COUNT
 	};
 
@@ -338,18 +346,25 @@ namespace FastInternal
 		FastIO();
 		~FastIO();
 
-		void SetWindowSize(const FastVec2& set);
+		void SetViewportSize(const FastVec2& set);
+		FastVec2 GetViewportSize() const;
 		bool GetKeyDown(const FastKeyMapping& key) const;
 
-	private:
-		FastVec2             window_size;
+		void SetMousePos(const FastVec2& set);
 
-		FastKeyMapping       key_maping[FastKeyMapping::FAST_KEY_COUNT];
+		void AddKeyMaping(FastKeyMapping key, Fuint maped_key);
+
+	private:
+		FastVec2             viewport_size;
+
+		Fuint				 key_maping[FastKeyMapping::FAST_KEY_COUNT];
 
 		FastMouseState       mouse_left_button = FastMouseState::FAST_MOUSE_IDLE;
 		FastMouseState       mouse_right_button = FastMouseState::FAST_MOUSE_IDLE;
 
 		FastMouseCenterState mouse_center_button = FastMouseCenterState::FAST_MOUSE_CENTER_STATE_IDLE;
+
+		FastVec2			 mouse_pos;
 	};
 	
 	// ----------------------------------------------------------------------------
@@ -496,6 +511,11 @@ namespace FastInternal
 		 FastDraw();
 		~FastDraw();
 
+		// Clipping
+		void SetClipping(const FastRect& set);
+		void DisableClipping();
+
+
 		// Basics
 		void Line(FastVec2 start, FastVec2 end, FastColour colour);
 		void Quad(FastVec2 pos, FastVec2 size, FastColour colour);
@@ -520,6 +540,9 @@ namespace FastInternal
 
 	private:
 		std::vector<FastDrawShape> shapes;
+
+		bool	 clipping_enabled = false;
+		FastRect curr_clipping_rect;
 	};
 
 	class FastDrawShape
@@ -532,6 +555,7 @@ namespace FastInternal
 		void Finish(FastColour colour);
 		void Finish(FastColour colour, FastVec4 range_uvs);
 		void Clear();
+		void SetClippingRect(const FastRect& rect);
 
 		Fuint* GetIndices();
 		Fuint GetIndicesCount();
@@ -539,6 +563,9 @@ namespace FastInternal
 		float* GetColours();
 		float* GetUvs();
 		float* GetVerticesColourUvs();
+
+		bool GetUsesClippingRect() const;
+		FastRect GetClippingRect() const;
 
 		Fuint GetTextureId();
 
@@ -562,7 +589,10 @@ namespace FastInternal
 		bool				  finished = false;
 		std::vector<FastVec2> points;
 
-		FastVec4 quad_size;
+		bool				  uses_clipping_rect = false;
+		FastRect			  clipping_rect;
+
+		FastVec4			  quad_size;
 	};
 
 	// ----------------------------------------------------------------------------
