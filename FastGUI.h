@@ -147,8 +147,8 @@ public:
 	FastRect(float x, float y, float w, float h);
 	FastRect(const FastVec4& vec);
 
-	float xw();
-	float yh();
+	inline float xw();
+	inline float yh();
 
 	FastVec2 Pos();
 	FastVec2 Size();
@@ -156,6 +156,7 @@ public:
 
 	bool Overlaps(FastRect rec);
 	bool Contains(FastRect rec);
+	bool Contains(FastVec2 point);
 
 public:
 	float x = 0.0f;
@@ -485,12 +486,14 @@ namespace FastInternal
 		void Line(FastVec2 start, FastVec2 end, FastColour colour);
 		void Quad(FastVec2 pos, FastVec2 size, FastColour colour);
 		void Circle(FastVec2 pos, float radius, FastColour colour);
-		void CircleQuarter(FastVec2 pos, float radius, float starting_angle, float roundness, FastColour colour);
-		void ImageQuad(FastVec2 pos, FastVec2 size, Fuint id);
+		void CircleQuarter(FastVec2 pos, float radius, float starting_angle, FastColour colour);
+		void ImageQuad(FastVec2 pos, FastVec2 size, Fuint image_id);
+		void DownTraingle(FastVec2 pos, float size, FastColour colour);
+		void RightTraingle(FastVec2 pos, float size, FastColour colour);
 
 		// Composed
-		void RoundedQuad(FastVec2 pos, FastVec2 size, float round_radius, float roundness, FastColour colour);
-		void TopRoundedQuad(FastVec2 pos, FastVec2 size, float round_radius, float roundness, FastColour colour);
+		void RoundedQuad(FastVec2 pos, FastVec2 size, float round_radius, FastColour colour);
+		void TopRoundedQuad(FastVec2 pos, FastVec2 size, float round_radius, FastColour colour);
 
 		void FontAtlas(FastVec2 pos, FastVec2 size, FastFont* font, FastColour colour);
 		void Text(FastVec2 pos, float size, FastFont* font, std::string text, FastColour colour);
@@ -538,10 +541,9 @@ namespace FastInternal
 		std::vector<float>    vertices;
 		std::vector<float>    colours;
 		std::vector<float>    uvs;
-		                      
-		Fuint                 texture_id = 0;
-
 		std::vector<float>    vertices_colour_uvs;
+
+		Fuint                 texture_id = 0;
 
 		bool				  finished = false;
 		std::vector<FastVec2> points;
@@ -658,11 +660,6 @@ namespace FastInternal
 
 		void Draw();
 	};
-}
-
-namespace FastDraw
-{
-
 }
 
 #endif // !FASTUI

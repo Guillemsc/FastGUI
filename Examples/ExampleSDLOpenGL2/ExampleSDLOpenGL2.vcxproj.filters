@@ -13,7 +13,7 @@
     <ClCompile Include="..\..\FastGUI.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SDLOpenGL2Renderer.cpp">
+    <ClCompile Include="FastSDLOpenGL2Renderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -21,10 +21,10 @@
     <ClInclude Include="..\..\FastGUI.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="SDLOpenGL2Renderer.h">
+    <ClInclude Include="..\..\stb_truetype.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\stb_truetype.h">
+    <ClInclude Include="FastSDLOpenGL2Renderer.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

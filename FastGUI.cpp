@@ -248,6 +248,13 @@ bool FastRect::Contains(FastRect rec)
 	return false;
 }
 
+bool FastRect::Contains(FastVec2 point)
+{
+	if (point.x > x && point.x < xw() && point.y > y && point.y < yh())
+		return true;
+	return false;
+}
+
 FastColour::FastColour()
 {
 }
@@ -500,8 +507,8 @@ void FastInternal::NewFrame()
 
 		//fast_main->draw->CircleQuarter(FastVec2(200, 200), 50, 0, 1, FastColour(1, 1, 1));
 
-		//fast_main->draw->RoundedQuad(FastVec2(300, 300), FastVec2(300, 100), 10, 10, FastColour(0.2, 0.2, 0.2));
-		////fast_main->draw->TopRoundedQuad(FastVec2(300, 300), FastVec2(300, 100), 150, 10, FastColour(0.3, 0.3, 0.3));
+		//fast_main->draw->RoundedQuad(FastVec2(230, 50), FastVec2(300, 200), 0, FastColour(1, 1, 1));
+		fast_main->draw->TopRoundedQuad(FastVec2(230, 50), FastVec2(300, 200), 10, FastColour(1, 1, 1));
 
 		//fast_main->draw->BezierQuad(FastVec2(200, 200), FastVec2(10, 10), FastVec2(0.8f, 0.0f), FastVec2(0.8f, 0.0f));
 
@@ -510,6 +517,7 @@ void FastInternal::NewFrame()
 		//fast_main->draw->FontAtlas(FastVec2(0, 0), FastVec2(1280, 720), fast_main->fonts->test_font, FastColour(1, 1, 1, 1));
 
 		fast_main->draw->Text(FastVec2(10, 400), 30, fast_main->fonts->test_font, "Hola, me dic guillem @", FastColour(1, 1, 1, 1));
+		fast_main->draw->RightTraingle(FastVec2(500, 500), 50, FastColour(1, 1, 1, 1));
 	}
 }
 
@@ -525,7 +533,7 @@ void FastInternal::LoadFont(const char * filepath)
 {
 	if (FastInternal::Inited())
 	{
-		fast_main->fonts->LoadFont(filepath, 50, FastInternal::FastFontRange::FAST_FONT_RANGE_LATIN);
+		fast_main->fonts->LoadFont(filepath, 30, FastInternal::FastFontRange::FAST_FONT_RANGE_LATIN);
 	}
 }
 
@@ -1111,7 +1119,7 @@ void FastInternal::FastDraw::Circle(FastVec2 pos, float radius, FastColour colou
 	}
 }
 
-void FastInternal::FastDraw::CircleQuarter(FastVec2 pos, float radius, float starting_angle, float roundness, FastColour colour)
+void FastInternal::FastDraw::CircleQuarter(FastVec2 pos, float radius, float starting_angle, FastColour colour)
 {	
 	if (radius > 1)
 	{
@@ -1164,7 +1172,41 @@ void FastInternal::FastDraw::ImageQuad(FastVec2 pos, FastVec2 size, Fuint id)
 	shapes.push_back(shape);
 }
 
-void FastInternal::FastDraw::RoundedQuad(FastVec2 pos, FastVec2 size, float round_radius, float roundness, FastColour colour)
+void FastInternal::FastDraw::DownTraingle(FastVec2 pos, float size, FastColour colour)
+{
+	FastInternal::FastDrawShape shape;
+
+	FastVec2 point1 = pos;
+	FastVec2 point2 = FastVec2(pos.x + (size * 0.5f), pos.y + size);
+	FastVec2 point3 = FastVec2(pos.x + size, pos.y);
+
+	shape.AddPoint(point1);
+	shape.AddPoint(point2);
+	shape.AddPoint(point3);
+
+	shape.Finish(colour);
+
+	shapes.push_back(shape);
+}
+
+void FastInternal::FastDraw::RightTraingle(FastVec2 pos, float size, FastColour colour)
+{
+	FastInternal::FastDrawShape shape;
+
+	FastVec2 point1 = pos;
+	FastVec2 point2 = FastVec2(pos.x, pos.y + size);
+	FastVec2 point3 = FastVec2(pos.x + size, pos.y + (size * 0.5f));
+
+	shape.AddPoint(point1);
+	shape.AddPoint(point2);
+	shape.AddPoint(point3);
+
+	shape.Finish(colour);
+
+	shapes.push_back(shape);
+}
+
+void FastInternal::FastDraw::RoundedQuad(FastVec2 pos, FastVec2 size, float round_radius, FastColour colour)
 {
 	int min_x = pos.x;
 	int max_x = pos.x + size.x;
@@ -1177,17 +1219,17 @@ void FastInternal::FastDraw::RoundedQuad(FastVec2 pos, FastVec2 size, float roun
 	if (round_radius > size.y * 0.5f)
 		round_radius = size.y * 0.5f;
 
-	CircleQuarter(FastVec2(min_x + round_radius, min_y + round_radius), round_radius, 90, roundness, colour);
-	CircleQuarter(FastVec2(min_x + round_radius, max_y - round_radius), round_radius, 180, roundness, colour);
-	CircleQuarter(FastVec2(max_x - round_radius, max_y - round_radius), round_radius, 270, roundness, colour);
-	CircleQuarter(FastVec2(max_x - round_radius, min_y + round_radius), round_radius, 360, roundness, colour);
+	CircleQuarter(FastVec2(min_x + round_radius, min_y + round_radius), round_radius, 90, colour);
+	CircleQuarter(FastVec2(min_x + round_radius, max_y - round_radius), round_radius, 180, colour);
+	CircleQuarter(FastVec2(max_x - round_radius, max_y - round_radius), round_radius, 270, colour);
+	CircleQuarter(FastVec2(max_x - round_radius, min_y + round_radius), round_radius, 360, colour);
 
 	Quad(FastVec2(min_x + round_radius, min_y), FastVec2((max_x - min_x) - (round_radius * 2), max_y - min_y), colour);
 	Quad(FastVec2(min_x, min_y + round_radius), FastVec2(round_radius, (max_y - min_y) - (round_radius * 2)), colour);
 	Quad(FastVec2(max_x - round_radius, min_y + round_radius), FastVec2(round_radius, (max_y - min_y) - (round_radius * 2)), colour);
 }
 
-void FastInternal::FastDraw::TopRoundedQuad(FastVec2 pos, FastVec2 size, float round_radius, float roundness, FastColour colour)
+void FastInternal::FastDraw::TopRoundedQuad(FastVec2 pos, FastVec2 size, float round_radius, FastColour colour)
 {
 	int min_x = pos.x;
 	int max_x = pos.x + size.x;
@@ -1197,11 +1239,11 @@ void FastInternal::FastDraw::TopRoundedQuad(FastVec2 pos, FastVec2 size, float r
 	if (round_radius > size.x * 0.5f)
 		round_radius = size.x * 0.5f;
 
-	CircleQuarter(FastVec2(min_x + round_radius, min_y + round_radius), round_radius, 90, roundness, colour);
-	CircleQuarter(FastVec2(max_x - round_radius, min_y + round_radius), round_radius, 360, roundness, colour);
+	CircleQuarter(FastVec2(min_x + round_radius, min_y + round_radius), round_radius, 90, colour);
+	CircleQuarter(FastVec2(max_x - round_radius, min_y + round_radius), round_radius, 360, colour);
 
 	Quad(FastVec2(min_x + round_radius, min_y), FastVec2((max_x - min_x) - (round_radius * 2), round_radius), colour);
-	Quad(FastVec2(min_x, min_y + round_radius), FastVec2(max_x - min_x, max_y - min_y), colour);
+	Quad(FastVec2(min_x, min_y + round_radius), FastVec2(max_x - min_x, max_y - min_y - (round_radius)), colour);
 }
 
 void FastInternal::FastDraw::FontAtlas(FastVec2 pos, FastVec2 size, FastFont * font, FastColour colour)
@@ -1311,9 +1353,10 @@ FastInternal::FastWindow::~FastWindow()
 
 void FastInternal::FastWindow::Draw()
 {
-	fast_main->draw->RoundedQuad(rect.Pos(), rect.Size(), 10, 10, bg_colour);
-	fast_main->draw->TopRoundedQuad(rect.Pos(), FastVec2(rect.Size().x, 10), 10, 0, FastColour(0.4, 0.4, 0.4, 1));
-	fast_main->draw->Text(FastVec2(rect.Pos().x + 13, rect.Pos().y + 2), 16, fast_main->fonts->test_font, "Window text", FastColour(1, 1, 1, 1));
+	fast_main->draw->RoundedQuad(rect.Pos(), rect.Size(), 10, bg_colour);
+	fast_main->draw->TopRoundedQuad(rect.Pos(), FastVec2(rect.Size().x, 20), 10, FastColour(0.4, 0.4, 0.4, 1));
+	fast_main->draw->Text(FastVec2(rect.Pos().x + 27, rect.Pos().y + 2), 16, fast_main->fonts->test_font, "Window text", FastColour(1, 1, 1, 1));
+	fast_main->draw->DownTraingle(FastVec2(rect.Pos().x + 10, rect.Pos().y + 6), 10, FastColour(1, 1, 1, 1));
 	fast_main->draw->Text(FastVec2(0, 0), 10, fast_main->fonts->test_font, "Window text", FastColour(1, 1, 1, 1));
 }
 

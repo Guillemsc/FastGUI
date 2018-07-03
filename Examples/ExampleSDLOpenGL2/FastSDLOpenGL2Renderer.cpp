@@ -1,4 +1,4 @@
-#include "SDLOpenGL2Renderer.h"
+#include "FastSDLOpenGL2Renderer.h"
 
 #include "..\..\FastGUI.h"
 
@@ -83,10 +83,6 @@ void FastProcessEvent(SDL_Event * ev)
 {
 }
 
-
-//void FastProcessEvent(SDL_Event * ev)
-//{
-//}
 
 void Fast_EndFrame()
 {
