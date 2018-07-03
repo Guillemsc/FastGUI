@@ -7,7 +7,7 @@
 #pragma comment( lib, "Libs/SDL2/libx86/SDL2main.lib" )
 #pragma comment (lib, "opengl32.lib")
 
-#include "SDLOpenGL2Renderer.h"
+#include "FastSDLOpenGL2Renderer.h"
 #include "..\..\FastGUI.h"
 
 int main(int argc, char ** argv)
@@ -70,7 +70,7 @@ int main(int argc, char ** argv)
 	bool done = false;
 	while (!done)
 	{
-		Fast_NewFrame();
+		Fast_NewFrame(window);
 
 		SDL_Event event;
 		while (SDL_PollEvent(&event))

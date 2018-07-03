@@ -438,6 +438,15 @@ const char * Fast::GetVersion()
 	return FASTGUI_VERSION;
 }
 
+
+void Fast::LoadFont(const char * filepath)
+{
+	if (FastInternal::Inited())
+	{
+		fast_main->fonts->LoadFont(filepath, 30, FastInternal::FastFontRange::FAST_FONT_RANGE_LATIN);
+	}
+}
+
 void Fast::PushID(const char * id)
 {
 	if (FastInternal::Inited())
@@ -499,10 +508,13 @@ void FastInternal::Quit()
 	FAST_DEL(fast_main);
 }
 
-void FastInternal::NewFrame()
+void FastInternal::NewFrame(FastVec2 window_size)
 {
 	if (FastInternal::Inited())
 	{
+		fast_main->io->SetWindowSize(window_size);
+
+		// Debug ---------------------------------------------------------
 		fast_main->draw->ClearShapes();
 
 		//fast_main->draw->CircleQuarter(FastVec2(200, 200), 50, 0, 1, FastColour(1, 1, 1));
@@ -526,14 +538,6 @@ void FastInternal::EndFrame()
 	if (FastInternal::Inited())
 	{
 		fast_main->creation->RemoveDeadElements();
-	}
-}
-
-void FastInternal::LoadFont(const char * filepath)
-{
-	if (FastInternal::Inited())
-	{
-		fast_main->fonts->LoadFont(filepath, 30, FastInternal::FastFontRange::FAST_FONT_RANGE_LATIN);
 	}
 }
 
@@ -751,6 +755,11 @@ FastInternal::FastIO::FastIO()
 
 FastInternal::FastIO::~FastIO()
 {
+}
+
+void FastInternal::FastIO::SetWindowSize(const FastVec2 & set)
+{
+	window_size = set;
 }
 
 FastInternal::FastStyle::FastStyle()

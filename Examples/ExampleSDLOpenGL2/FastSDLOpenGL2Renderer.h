@@ -5,7 +5,7 @@
 #include "..\..\FastGUI.h"
 
 void Fast_Init();
-void Fast_NewFrame();
+void Fast_NewFrame(SDL_Window* window);
 void Fast_Render();
 void FastProcessEvent(SDL_Event* ev);
 void Fast_EndFrame();

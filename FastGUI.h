@@ -200,6 +200,8 @@ namespace Fast
 {
 	const char* GetVersion();
 
+	void LoadFont(const char* filepath);
+
 	void PushID(const char* id);
 	void PopID();
 
@@ -233,10 +235,8 @@ namespace FastInternal
 	// General functions
 	void Init();
 	void Quit();
-	void NewFrame();
+	void NewFrame(FastVec2 window_size);
 	void EndFrame();
-
-	void LoadFont(const char* filepath);
 
 	void SetLoadTexture(std::function<int(Fuchar* data, FastVec2 size)> load_texture);
 
@@ -325,17 +325,31 @@ namespace FastInternal
 		FAST_MOUSE_DOWN,
 	};
 
+	enum FastMouseCenterState
+	{
+		FAST_MOUSE_CENTER_STATE_UP,
+		FAST_MOUSE_CENTER_STATE_DOWN,
+		FAST_MOUSE_CENTER_STATE_IDLE,
+	};
+
 	class FastIO
 	{
 	public:
 		FastIO();
 		~FastIO();
 
-	private:
-		FastKeyMapping key_maping[FastKeyMapping::FAST_KEY_COUNT];
+		void SetWindowSize(const FastVec2& set);
+		bool GetKeyDown(const FastKeyMapping& key) const;
 
-		FastMouseState mouse_left_button = FAST_MOUSE_IDLE;
-		FastMouseState mouse_right_button = FAST_MOUSE_IDLE;
+	private:
+		FastVec2             window_size;
+
+		FastKeyMapping       key_maping[FastKeyMapping::FAST_KEY_COUNT];
+
+		FastMouseState       mouse_left_button = FastMouseState::FAST_MOUSE_IDLE;
+		FastMouseState       mouse_right_button = FastMouseState::FAST_MOUSE_IDLE;
+
+		FastMouseCenterState mouse_center_button = FastMouseCenterState::FAST_MOUSE_CENTER_STATE_IDLE;
 	};
 	
 	// ----------------------------------------------------------------------------
