@@ -447,6 +447,8 @@ namespace FastInternal
 		FastFont(stbtt_fontinfo font_info);
 		~FastFont();
 
+		void CleanUp();
+
 		void SetFontScale(float set);
 		float GetFontScale();
 
@@ -496,9 +498,9 @@ namespace FastInternal
 		FastFonts();
 		~FastFonts();
 
-		FastFont* LoadFont(const char* path, int font_size, FastFontRange range = FastFontRange::FAST_FONT_RANGE_LATIN);
+		void LoadFont(const char* path, int font_size, FastFontRange range = FastFontRange::FAST_FONT_RANGE_LATIN);
 
-		FastFont* test_font = nullptr;
+		FastFont* GetCurrFont() const;
 
 	private:
 		FastVec2 TexturePosToUV(FastVec2 texture_size, FastVec2 pos);
@@ -512,7 +514,7 @@ namespace FastInternal
 		std::vector<FastVec2> GetThaiGlyphsRanges();
 
 	private:
-		std::vector<FastFont*> fonts;
+		FastFont* curr_font = nullptr;
 	};
 
 	// ----------------------------------------------------------------------------
@@ -520,46 +522,6 @@ namespace FastInternal
 	//-----------------------------------------------------------------------------
 	// FAST DRAW
 	//-----------------------------------------------------------------------------
-
-	class FastDraw
-	{
-	public:
-		 FastDraw();
-		~FastDraw();
-
-		// Clipping
-		void SetClipping(const FastRect& set);
-		void DisableClipping();
-
-
-		// Basics
-		void Line(FastVec2 start, FastVec2 end, FastColour colour);
-		void Quad(FastVec2 pos, FastVec2 size, FastColour colour);
-		void Circle(FastVec2 pos, float radius, FastColour colour);
-		void CircleQuarter(FastVec2 pos, float radius, float starting_angle, FastColour colour);
-		void ImageQuad(FastVec2 pos, FastVec2 size, Fuint image_id);
-		void DownTraingle(FastVec2 pos, float size, FastColour colour);
-		void RightTraingle(FastVec2 pos, float size, FastColour colour);
-
-		// Composed
-		void RoundedQuad(FastVec2 pos, FastVec2 size, float round_radius, FastColour colour);
-		void TopRoundedQuad(FastVec2 pos, FastVec2 size, float round_radius, FastColour colour);
-
-		void FontAtlas(FastVec2 pos, FastVec2 size, FastFont* font, FastColour colour);
-		void Text(FastVec2 pos, float size, FastFont* font, std::string text, FastColour colour);
-
-		void BezierQuad(FastVec2 pos, FastVec2 size, FastVec2 p1, FastVec2 p2); // Not working
-
-		std::vector<FastDrawShape> GetShapes() const;
-		void ClearShapes();
-	private:
-
-	private:
-		std::vector<FastDrawShape> shapes;
-
-		bool	 clipping_enabled = false;
-		FastRect curr_clipping_rect;
-	};
 
 	class FastDrawShape
 	{
@@ -616,6 +578,52 @@ namespace FastInternal
 		FastRect			  clipping_rect;
 
 		FastVec4			  quad_size;
+	};
+
+	class FastDraw
+	{
+	public:
+		 FastDraw();
+		~FastDraw();
+
+		// Shape management
+		void StartShape();
+		void FinishShape();
+
+		// Clipping
+		void SetClipping(const FastRect& set);
+		void DisableClipping();
+
+		// Basics
+		void Line(FastVec2 start, FastVec2 end, FastColour colour);
+		void Quad(FastVec2 pos, FastVec2 size, FastColour colour);
+		void Circle(FastVec2 pos, float radius, FastColour colour);
+		void CircleQuarter(FastVec2 pos, float radius, float starting_angle, FastColour colour);
+		void ImageQuad(FastVec2 pos, FastVec2 size, Fuint image_id);
+		void DownTraingle(FastVec2 pos, float size, FastColour colour);
+		void RightTraingle(FastVec2 pos, float size, FastColour colour);
+
+		// Composed
+		void RoundedQuad(FastVec2 pos, FastVec2 size, float round_radius, FastColour colour);
+		void TopRoundedQuad(FastVec2 pos, FastVec2 size, float round_radius, FastColour colour);
+
+		void FontAtlas(FastVec2 pos, FastVec2 size, FastFont* font, FastColour colour);
+		void Text(FastVec2 pos, float size, FastFont* font, std::string text, FastColour colour);
+
+		void BezierQuad(FastVec2 pos, FastVec2 size, FastVec2 p1, FastVec2 p2); // Not working
+
+		std::vector<FastDrawShape> GetShapes() const;
+		void ClearShapes();
+	private:
+
+	private:
+		std::vector<FastDrawShape> shapes;
+		
+		bool	      drawing_shape = false;
+		FastDrawShape curr_shape;
+
+		bool	      clipping_enabled = false;
+		FastRect      curr_clipping_rect;
 	};
 
 	// ----------------------------------------------------------------------------

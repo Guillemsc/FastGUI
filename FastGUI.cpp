@@ -573,8 +573,10 @@ void FastInternal::NewFrame(FastVec2 window_size, FastVec2 mouse_pos, float delt
 
 		//fast_main->draw->FontAtlas(FastVec2(0, 0), FastVec2(1280, 720), fast_main->fonts->test_font, FastColour(1, 1, 1, 1));
 
+		fast_main->draw->StartShape();
 		std::string frames = std::to_string(fast_main->io->GetFps());
-		fast_main->draw->Text(FastVec2(10, 400), 30, fast_main->fonts->test_font, frames, FastColour(1, 1, 1, 1));
+		fast_main->draw->Text(FastVec2(10, 400), 30, fast_main->fonts->GetCurrFont(), frames, FastColour(1, 1, 1, 1));
+		fast_main->draw->FinishShape();
 		//fast_main->draw->RightTraingle(FastVec2(500, 500), 50, FastColour(1, 1, 1, 1));
 	}
 }
@@ -903,7 +905,7 @@ FastInternal::FastFonts::~FastFonts()
 {
 }
 
-FastInternal::FastFont* FastInternal::FastFonts::LoadFont(const char * path, int font_size, FastFontRange range)
+void FastInternal::FastFonts::LoadFont(const char * path, int font_size, FastFontRange range)
 {
 	FastFont* ret = nullptr;
 
@@ -954,6 +956,9 @@ FastInternal::FastFont* FastInternal::FastFonts::LoadFont(const char * path, int
 
 	if (stbtt_InitFont(&font_info, fontBuffer, stbtt_GetFontOffsetForIndex(fontBuffer, 0)))
 	{
+		if (curr_font != nullptr)
+			FAST_DEL(curr_font);
+
 		ret = new FastFont(font_info);
 
 		int atlas_tex_w = 2048;
@@ -1072,14 +1077,17 @@ FastInternal::FastFont* FastInternal::FastFonts::LoadFont(const char * path, int
 		ret->size.y = atlas_tex_h;
 		ret->texture_id = fast_main->load_texture(ret->texture_data, ret->size);
 
-		test_font = ret;
+		curr_font = ret;
 
 		//buffer.Clear();
 	}
 
 	// --------------------------------------
+}
 
-	return ret;
+FastInternal::FastFont * FastInternal::FastFonts::GetCurrFont() const
+{
+	return curr_font;
 }
 
 FastVec2 FastInternal::FastFonts::TexturePosToUV(FastVec2 texture_size, FastVec2 pos)
@@ -1178,6 +1186,29 @@ FastInternal::FastDraw::~FastDraw()
 {
 }
 
+void FastInternal::FastDraw::StartShape()
+{
+	curr_shape = FastInternal::FastDrawShape();
+
+	drawing_shape = true;
+}
+
+void FastInternal::FastDraw::FinishShape()
+{
+	if (drawing_shape)
+	{
+		if (clipping_enabled)
+			curr_shape.SetClippingRect(curr_clipping_rect);
+
+		shapes.push_back(curr_shape);
+		curr_shape = FastInternal::FastDrawShape();
+
+		drawing_shape = false;
+	}
+	else
+		FAST_ASSERT(drawing_shape, "Shape can't be finished befor being created (Use StartShape function)");
+}
+
 void FastInternal::FastDraw::DisableClipping()
 {
 	clipping_enabled = false;
@@ -1196,31 +1227,22 @@ void FastInternal::FastDraw::Line(FastVec2 start, FastVec2 end, FastColour colou
 
 void FastInternal::FastDraw::Quad(FastVec2 pos, FastVec2 size, FastColour colour)
 {
-	FastInternal::FastDrawShape shape;
-
 	int min_x = pos.x;
 	int max_x = pos.x + size.x;
 	int min_y = pos.y;
 	int max_y = pos.y + size.y;
 
-	shape.AddPoint(FastVec2(min_x, min_y));
-	shape.AddPoint(FastVec2(min_x, max_y));
-	shape.AddPoint(FastVec2(max_x, max_y));
-	shape.AddPoint(FastVec2(max_x, min_y));
-	shape.Finish(colour);
-
-	if (clipping_enabled)
-		shape.SetClippingRect(curr_clipping_rect);
-
-	shapes.push_back(shape);
+	curr_shape.AddPoint(FastVec2(min_x, min_y));
+	curr_shape.AddPoint(FastVec2(min_x, max_y));
+	curr_shape.AddPoint(FastVec2(max_x, max_y));
+	curr_shape.AddPoint(FastVec2(max_x, min_y));
+	curr_shape.Finish(colour);
 }
 
 void FastInternal::FastDraw::Circle(FastVec2 pos, float radius, FastColour colour)
 {
 	if (radius > 1)
 	{
-		FastInternal::FastDrawShape shape;
-
 		int steps = 50;
 
 		if (radius < 20)
@@ -1229,7 +1251,7 @@ void FastInternal::FastDraw::Circle(FastVec2 pos, float radius, FastColour colou
 		float angle_add = (float)360 / (float)(steps);
 		float curr_angle = 0;
 
-		shape.AddPoint(FastVec2(pos.x, pos.y));
+		curr_shape.AddPoint(FastVec2(pos.x, pos.y));
 
 		for (int i = 0; i < steps + 1; ++i)
 		{
@@ -1239,15 +1261,10 @@ void FastInternal::FastDraw::Circle(FastVec2 pos, float radius, FastColour colou
 
 			curr_angle -= angle_add;
 
-			shape.AddPoint(FastVec2(pos.x + x, pos.y + y));
+			curr_shape.AddPoint(FastVec2(pos.x + x, pos.y + y));
 		}
 
-		shape.Finish(colour);
-
-		if (clipping_enabled)
-			shape.SetClippingRect(curr_clipping_rect);
-
-		shapes.push_back(shape);
+		curr_shape.Finish(colour);
 	}
 }
 
@@ -1255,8 +1272,6 @@ void FastInternal::FastDraw::CircleQuarter(FastVec2 pos, float radius, float sta
 {	
 	if (radius > 1)
 	{
-		FastInternal::FastDrawShape shape;
-
 		int steps = 10;
 
 		if (radius < 20)
@@ -1265,7 +1280,7 @@ void FastInternal::FastDraw::CircleQuarter(FastVec2 pos, float radius, float sta
 		float angle_add = (float)90 / (float)(steps);
 		float curr_angle = -starting_angle;
 
-		shape.AddPoint(FastVec2(pos.x, pos.y));
+		curr_shape.AddPoint(FastVec2(pos.x, pos.y));
 
 		for (int i = 0; i < steps + 1; ++i)
 		{
@@ -1275,79 +1290,53 @@ void FastInternal::FastDraw::CircleQuarter(FastVec2 pos, float radius, float sta
 
 			curr_angle -= angle_add;
 
-			shape.AddPoint(FastVec2(pos.x + x, pos.y + y));
+			curr_shape.AddPoint(FastVec2(pos.x + x, pos.y + y));
 		}
 
-		shape.Finish(colour);
-
-		if (clipping_enabled)
-			shape.SetClippingRect(curr_clipping_rect);
-
-		shapes.push_back(shape);
+		curr_shape.Finish(colour);
 	}
 }
 
 void FastInternal::FastDraw::ImageQuad(FastVec2 pos, FastVec2 size, Fuint id)
 {
-	FastInternal::FastDrawShape shape;
-
 	int min_x = pos.x;
 	int max_x = pos.x + size.x;
 	int min_y = pos.y;
 	int max_y = pos.y + size.y;
 
-	shape.AddPoint(FastVec2(min_x, min_y));
-	shape.AddPoint(FastVec2(min_x, max_y));
-	shape.AddPoint(FastVec2(max_x, max_y));
-	shape.AddPoint(FastVec2(max_x, min_y));
-	shape.Finish(FastColour(1.0f, 0.1f, 0.9f, 1.0f));
+	curr_shape.AddPoint(FastVec2(min_x, min_y));
+	curr_shape.AddPoint(FastVec2(min_x, max_y));
+	curr_shape.AddPoint(FastVec2(max_x, max_y));
+	curr_shape.AddPoint(FastVec2(max_x, min_y));
+	curr_shape.Finish(FastColour(1.0f, 0.1f, 0.9f, 1.0f));
 
-	shape.AddTextureId(id);
-
-	if (clipping_enabled)
-		shape.SetClippingRect(curr_clipping_rect);
-
-	shapes.push_back(shape);
+	curr_shape.AddTextureId(id);
 }
 
 void FastInternal::FastDraw::DownTraingle(FastVec2 pos, float size, FastColour colour)
 {
-	FastInternal::FastDrawShape shape;
-
 	FastVec2 point1 = pos;
 	FastVec2 point2 = FastVec2(pos.x + (size * 0.5f), pos.y + size);
 	FastVec2 point3 = FastVec2(pos.x + size, pos.y);
 
-	shape.AddPoint(point1);
-	shape.AddPoint(point2);
-	shape.AddPoint(point3);
+	curr_shape.AddPoint(point1);
+	curr_shape.AddPoint(point2);
+	curr_shape.AddPoint(point3);
 
-	shape.Finish(colour);
-
-	if (clipping_enabled)
-		shape.SetClippingRect(curr_clipping_rect);
-
-	shapes.push_back(shape);
+	curr_shape.Finish(colour);
 }
 
 void FastInternal::FastDraw::RightTraingle(FastVec2 pos, float size, FastColour colour)
 {
-	FastInternal::FastDrawShape shape;
-
 	FastVec2 point1 = pos;
 	FastVec2 point2 = FastVec2(pos.x, pos.y + size);
 	FastVec2 point3 = FastVec2(pos.x + size, pos.y + (size * 0.5f));
 
-	shape.AddPoint(point1);
-	shape.AddPoint(point2);
-	shape.AddPoint(point3);
+	curr_shape.AddPoint(point1);
+	curr_shape.AddPoint(point2);
+	curr_shape.AddPoint(point3);
 
-	shape.Finish(colour);
-
-	if (clipping_enabled)
-		shape.SetClippingRect(curr_clipping_rect);
-
-	shapes.push_back(shape);
+	curr_shape.Finish(colour);
 }
 
 void FastInternal::FastDraw::RoundedQuad(FastVec2 pos, FastVec2 size, float round_radius, FastColour colour)
@@ -1397,20 +1386,16 @@ void FastInternal::FastDraw::FontAtlas(FastVec2 pos, FastVec2 size, FastFont * f
 	int min_y = pos.y;
 	int max_y = pos.y + size.y;
 
-	FastDrawShape shape;
+	curr_shape.AddPoint(FastVec2(min_x, min_y));
+	curr_shape.AddPoint(FastVec2(min_x, max_y));
+	curr_shape.AddPoint(FastVec2(max_x, max_y));
+	curr_shape.AddPoint(FastVec2(max_x, min_y));
 
-	shape.AddPoint(FastVec2(min_x, min_y));
-	shape.AddPoint(FastVec2(min_x, max_y));
-	shape.AddPoint(FastVec2(max_x, max_y));
-	shape.AddPoint(FastVec2(max_x, min_y));
-
-	shape.AddTextureId(font->texture_id);
-	shape.Finish(colour);
+	curr_shape.AddTextureId(font->texture_id);
+	curr_shape.Finish(colour);
 
 	if (clipping_enabled)
-		shape.SetClippingRect(curr_clipping_rect);
-
-	shapes.push_back(shape);
+		curr_shape.SetClippingRect(curr_clipping_rect);
 }
 
 void FastInternal::FastDraw::Text(FastVec2 pos, float size, FastFont* font, std::string text, FastColour colour)
@@ -1418,8 +1403,6 @@ void FastInternal::FastDraw::Text(FastVec2 pos, float size, FastFont* font, std:
 	if (font != nullptr)
 	{
 		FastVec2 curr_pos = pos;
-
-		FastDrawShape shape;
 
 		for (int i = 0; i < text.size(); ++i)
 		{
@@ -1436,11 +1419,11 @@ void FastInternal::FastDraw::Text(FastVec2 pos, float size, FastFont* font, std:
 				int min_y = curr_pos.y;
 				int max_y = curr_pos.y + size;
 
-				shape.AddPoint(FastVec2(min_x, min_y));
-				shape.AddPoint(FastVec2(min_x, max_y));
-				shape.AddPoint(FastVec2(max_x, max_y));
-				shape.AddPoint(FastVec2(max_x, min_y));
-				shape.Finish(colour, FastVec4(glph.uvs_x0.x, glph.uvs_x0.y, glph.uvs_y1.x, glph.uvs_y1.y));
+				curr_shape.AddPoint(FastVec2(min_x, min_y));
+				curr_shape.AddPoint(FastVec2(min_x, max_y));
+				curr_shape.AddPoint(FastVec2(max_x, max_y));
+				curr_shape.AddPoint(FastVec2(max_x, min_y));
+				curr_shape.Finish(colour, FastVec4(glph.uvs_x0.x, glph.uvs_x0.y, glph.uvs_y1.x, glph.uvs_y1.y));
 
 				curr_pos.x = max_x + (size * 0.11f);
 			}
@@ -1448,12 +1431,10 @@ void FastInternal::FastDraw::Text(FastVec2 pos, float size, FastFont* font, std:
 				curr_pos.x += size * 0.25f;
 		}
 
-		shape.AddTextureId(fast_main->fonts->test_font->texture_id);
+		curr_shape.AddTextureId(fast_main->fonts->GetCurrFont()->texture_id);
 
 		if (clipping_enabled)
-			shape.SetClippingRect(curr_clipping_rect);
-
-		shapes.push_back(shape);
+			curr_shape.SetClippingRect(curr_clipping_rect);
 	}
 }
 
@@ -1503,14 +1484,19 @@ FastInternal::FastWindow::~FastWindow()
 
 void FastInternal::FastWindow::Draw()
 {
+	fast_main->draw->StartShape();
+
 	fast_main->draw->SetClipping(FastRect(rect.Pos(), rect.Size()));
 
 	fast_main->draw->RoundedQuad(rect.Pos(), rect.Size(), 10, bg_colour);
 	fast_main->draw->TopRoundedQuad(rect.Pos(), FastVec2(rect.Size().x, 20), 10, FastColour(0.4, 0.4, 0.4, 1));
 	fast_main->draw->DownTraingle(FastVec2(rect.Pos().x + 10, rect.Pos().y + 6), 10, FastColour(1, 1, 1, 1));
 
-	fast_main->draw->SetClipping(FastRect(FastVec2(rect.Pos().x + 27, rect.Pos().y + 2), FastVec2(rect.Size().x - 27, rect.Size().y)));
-	fast_main->draw->Text(FastVec2(rect.Pos().x + 27, rect.Pos().y + 2), 16, fast_main->fonts->test_font, "Window text", FastColour(1, 1, 1, 1));
+	fast_main->draw->FinishShape();
+
+	fast_main->draw->StartShape();
+	fast_main->draw->Text(FastVec2(rect.Pos().x + 27, rect.Pos().y + 2), 16, fast_main->fonts->GetCurrFont(), "Window text", FastColour(1, 1, 1, 1));
+	fast_main->draw->FinishShape();
 
 	fast_main->draw->DisableClipping();
 }
@@ -2119,6 +2105,10 @@ FastInternal::FastFont::FastFont(stbtt_fontinfo _font_info)
 }
 
 FastInternal::FastFont::~FastFont()
+{
+}
+
+void FastInternal::FastFont::CleanUp()
 {
 }
 
