@@ -150,6 +150,10 @@ float FastVec3::Distance(const FastVec3 & vec)
 
 FastVec4::FastVec4()
 {
+	x = 0;
+	y = 0;
+	w = 0;
+	z = 0;
 }
 
 FastVec4::FastVec4(float _x, float _y, float _w, float _z)
@@ -1415,6 +1419,8 @@ void FastInternal::FastDraw::Text(FastVec2 pos, float size, FastFont* font, std:
 	{
 		FastVec2 curr_pos = pos;
 
+		FastDrawShape shape;
+
 		for (int i = 0; i < text.size(); ++i)
 		{
 			Fuchar c = text[i];
@@ -1430,26 +1436,24 @@ void FastInternal::FastDraw::Text(FastVec2 pos, float size, FastFont* font, std:
 				int min_y = curr_pos.y;
 				int max_y = curr_pos.y + size;
 
-				FastDrawShape shape;
-
 				shape.AddPoint(FastVec2(min_x, min_y));
 				shape.AddPoint(FastVec2(min_x, max_y));
 				shape.AddPoint(FastVec2(max_x, max_y));
 				shape.AddPoint(FastVec2(max_x, min_y));
 				shape.Finish(colour, FastVec4(glph.uvs_x0.x, glph.uvs_x0.y, glph.uvs_y1.x, glph.uvs_y1.y));
 
-				shape.AddTextureId(fast_main->fonts->test_font->texture_id);
-
-				if (clipping_enabled)
-					shape.SetClippingRect(curr_clipping_rect);
-
-				shapes.push_back(shape);
-
 				curr_pos.x = max_x + (size * 0.11f);
 			}
 			else
 				curr_pos.x += size * 0.25f;
 		}
+
+		shape.AddTextureId(fast_main->fonts->test_font->texture_id);
+
+		if (clipping_enabled)
+			shape.SetClippingRect(curr_clipping_rect);
+
+		shapes.push_back(shape);
 	}
 }
 
@@ -1791,32 +1795,30 @@ FastInternal::FastDrawShape::FastDrawShape()
 
 void FastInternal::FastDrawShape::AddPoint(FastVec2 point_pos)
 {
-	if (!finished)
+	points.push_back(point_pos);
+
+	if (points.size() == 1)
 	{
-		points.push_back(point_pos);
-
-		if (points.size() == 1)
-		{
-			quad_size.x = point_pos.x;
-			quad_size.w = point_pos.x;
-			quad_size.y = point_pos.y;
-			quad_size.z = point_pos.y;
-		}
-		else
-		{
-			if (point_pos.x < quad_size.x)
-				quad_size.x = point_pos.x;
-
-			if (point_pos.x > quad_size.w)
-				quad_size.w = point_pos.x;
-
-			if (point_pos.y < quad_size.y)
-				quad_size.y = point_pos.y;
-
-			if (point_pos.y > quad_size.z)
-				quad_size.z = point_pos.y;
-		}
+		quad_size.x = point_pos.x;
+		quad_size.w = point_pos.x;
+		quad_size.y = point_pos.y;
+		quad_size.z = point_pos.y;
 	}
+	else
+	{
+		if (point_pos.x < quad_size.x)
+			quad_size.x = point_pos.x;
+
+		if (point_pos.x > quad_size.w)
+			quad_size.w = point_pos.x;
+
+		if (point_pos.y < quad_size.y)
+			quad_size.y = point_pos.y;
+
+		if (point_pos.y > quad_size.z)
+			quad_size.z = point_pos.y;
+	}
+	
 }
 
 void FastInternal::FastDrawShape::AddTextureId(Fuint id)
@@ -1827,60 +1829,61 @@ void FastInternal::FastDrawShape::AddTextureId(Fuint id)
 void FastInternal::FastDrawShape::Finish(FastColour colour)
 {
 	if (points.size() >= 3)
-	{
-		// Calc vertext, indices and color
-		if (points.size() >= 3 && !finished)
+	{		
+		finished = true;
+
+		// Vertices, Uvs, Colours
+
+		int num_points = points.size();
+
+		// Triangulize
+		for (int i = 0; i < num_points; i++)
 		{
-			finished = true;
+			FastVec2 curr_point = points[i];
 
-			// Vertices, Uvs, Colours
+			vertices.push_back(curr_point.x);
+			vertices.push_back(curr_point.y);
+			vertices.push_back(0);
 
-			int num_points = points.size();
+			// Color for vertices
+			colours.push_back(colour.r);
+			colours.push_back(colour.g);
+			colours.push_back(colour.b);
+			colours.push_back(colour.a);
 
-			// Triangulize
-			for (int i = 0; i < num_points; i++)
+			float x_uv = 0;
+			float y_uv = 0;
+			
+			// Uvs for vertices
+			float x_normalized = curr_point.x - quad_size.x;
+			float y_normalized = curr_point.y - quad_size.y;
+
+			float x_percentage = (x_normalized) / (quad_size.w - quad_size.x);
+			float y_percentage = (y_normalized) / (quad_size.z - quad_size.y);
+
+			x_uv = x_percentage;
+			y_uv = 1 - y_percentage;
+			
+			uvs.push_back(x_uv);
+			uvs.push_back(y_uv);
+
+			if (i > 1)
 			{
-				FastVec2 curr_point = points[i];
-
-				vertices.push_back(curr_point.x);
-				vertices.push_back(curr_point.y);
-				vertices.push_back(0);
-
-				// Color for vertices
-				colours.push_back(colour.r);
-				colours.push_back(colour.g);
-				colours.push_back(colour.b);
-				colours.push_back(colour.a);
-
-				float x_uv = 0;
-				float y_uv = 0;
-				
-				// Uvs for vertices
-				float x_normalized = curr_point.x - quad_size.x;
-				float y_normalized = curr_point.y - quad_size.y;
-
-				float x_percentage = (x_normalized) / (quad_size.w - quad_size.x);
-				float y_percentage = (y_normalized) / (quad_size.z - quad_size.y);
-
-				x_uv = x_percentage;
-				y_uv = 1 - y_percentage;
-				
-				uvs.push_back(x_uv);
-				uvs.push_back(y_uv);
-
-				if (i > 1)
-				{
-					// Indices for triangle
-					indices.push_back(0);
-					indices.push_back(i - 1);
-					indices.push_back(i);
-				}
+				// Indices for triangle
+				indices.push_back(curr_indices_count);
+				indices.push_back(curr_indices_count + i - 1);
+				indices.push_back(curr_indices_count + i);
 			}
-
-			vertices_colour_uvs.insert(vertices_colour_uvs.end(), vertices.begin(), vertices.end());
-			vertices_colour_uvs.insert(vertices_colour_uvs.end(), colours.begin(), colours.end());
-			vertices_colour_uvs.insert(vertices_colour_uvs.end(), uvs.begin(), uvs.end());
 		}
+
+		vertices_colour_uvs.insert(vertices_colour_uvs.end(), vertices.begin(), vertices.end());
+		vertices_colour_uvs.insert(vertices_colour_uvs.end(), colours.begin(), colours.end());
+		vertices_colour_uvs.insert(vertices_colour_uvs.end(), uvs.begin(), uvs.end());
+
+		curr_indices_count += num_points;
+		points.clear();
+		quad_size = FastVec4();
+		
 		// -----------------------------------
 	}
 
@@ -1891,73 +1894,70 @@ void FastInternal::FastDrawShape::Finish(FastColour colour, FastVec4 range_uvs)
 {
 	if (points.size() >= 3)
 	{
-		// Calc vertext, indices and color
-		if (points.size() >= 3 && !finished)
+		int num_points = points.size();
+
+		// Triangulize
+		for (int i = 0; i < num_points; i++)
 		{
-			finished = true;
+			FastVec2 curr_point = points[i];
 
-			// Vertices, Uvs, Colours
+			vertices.push_back(curr_point.x);
+			vertices.push_back(curr_point.y);
+			vertices.push_back(0);
 
-			int num_points = points.size();
+			// Color for vertices
+			colours.push_back(colour.r);
+			colours.push_back(colour.g);
+			colours.push_back(colour.b);
+			colours.push_back(colour.a);
 
-			// Triangulize
-			for (int i = 0; i < num_points; i++)
+			float ranged_x_uv = 0;
+			float ranged_y_uv = 0;
+
+			// Uvs for vertices
+			float x_normalized = curr_point.x - quad_size.x;
+			float y_normalized = curr_point.y - quad_size.y;
+
+			float x_percentage = (x_normalized) / (quad_size.w - quad_size.x);
+			float y_percentage = (y_normalized) / (quad_size.z - quad_size.y);
+
+			float x_uv = x_percentage;
+			float y_uv = y_percentage;
+
+			if (x_uv > 0)
 			{
-				FastVec2 curr_point = points[i];
-
-				vertices.push_back(curr_point.x);
-				vertices.push_back(curr_point.y);
-				vertices.push_back(0);
-
-				// Color for vertices
-				colours.push_back(colour.r);
-				colours.push_back(colour.g);
-				colours.push_back(colour.b);
-				colours.push_back(colour.a);
-
-				float ranged_x_uv = 0;
-				float ranged_y_uv = 0;
-
-				// Uvs for vertices
-				float x_normalized = curr_point.x - quad_size.x;
-				float y_normalized = curr_point.y - quad_size.y;
-
-				float x_percentage = (x_normalized) / (quad_size.w - quad_size.x);
-				float y_percentage = (y_normalized) / (quad_size.z - quad_size.y);
-
-				float x_uv = x_percentage;
-				float y_uv = y_percentage;
-
-				if (x_uv > 0)
-				{
-					float diff = (1 * (range_uvs.w - range_uvs.x));
-					ranged_x_uv = (x_uv * diff) / 1;
-				}
-				ranged_x_uv += range_uvs.x;
-
-				if (y_uv > 0)
-				{
-					float diff = ((1 - range_uvs.z) - (1 - range_uvs.y));
-					ranged_y_uv = (y_uv * diff) / 1;
-				}
-				ranged_y_uv = 1 - ranged_y_uv - (1 - range_uvs.y);
-
-				uvs.push_back(ranged_x_uv);
-				uvs.push_back(ranged_y_uv);
-
-				if (i > 1)
-				{
-					// Indices for triangle
-					indices.push_back(0);
-					indices.push_back(i - 1);
-					indices.push_back(i);
-				}
+				float diff = (1 * (range_uvs.w - range_uvs.x));
+				ranged_x_uv = (x_uv * diff) / 1;
 			}
+			ranged_x_uv += range_uvs.x;
 
-			vertices_colour_uvs.insert(vertices_colour_uvs.end(), vertices.begin(), vertices.end());
-			vertices_colour_uvs.insert(vertices_colour_uvs.end(), colours.begin(), colours.end());
-			vertices_colour_uvs.insert(vertices_colour_uvs.end(), uvs.begin(), uvs.end());
+			if (y_uv > 0)
+			{
+				float diff = ((1 - range_uvs.z) - (1 - range_uvs.y));
+				ranged_y_uv = (y_uv * diff) / 1;
+			}
+			ranged_y_uv = 1 - ranged_y_uv - (1 - range_uvs.y);
+
+			uvs.push_back(ranged_x_uv);
+			uvs.push_back(ranged_y_uv);
+
+			if (i > 1)
+			{
+				// Indices for triangle
+				indices.push_back(curr_indices_count);
+				indices.push_back(curr_indices_count + i - 1);
+				indices.push_back(curr_indices_count + i);
+			}
 		}
+
+		//vertices_colour_uvs.insert(vertices_colour_uvs.end(), vertices.begin(), vertices.end());
+		//vertices_colour_uvs.insert(vertices_colour_uvs.end(), colours.begin(), colours.end());
+		//vertices_colour_uvs.insert(vertices_colour_uvs.end(), uvs.begin(), uvs.end());
+
+		curr_indices_count += num_points;
+		points.clear();
+		quad_size = FastVec4();
+		
 		// -----------------------------------
 	}
 }

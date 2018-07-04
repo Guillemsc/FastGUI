@@ -605,6 +605,8 @@ namespace FastInternal
 		std::vector<float>    uvs;
 		std::vector<float>    vertices_colour_uvs;
 
+		Fuint				  curr_indices_count = 0;
+
 		Fuint                 texture_id = 0;
 
 		bool				  finished = false;
