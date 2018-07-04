@@ -396,8 +396,6 @@ void FastBuffer::SetSize(int _size)
 	buffer = new Fuchar[size];
 
 	Reset();
-
-	size = _size * sizeof(Fuchar);
 }
 
 void FastBuffer::SetSize(int _width, int _heigth)
@@ -575,7 +573,7 @@ void FastInternal::NewFrame(FastVec2 window_size, FastVec2 mouse_pos, float delt
 
 		fast_main->draw->StartShape();
 		std::string frames = std::to_string(fast_main->io->GetFps());
-		fast_main->draw->Text(FastVec2(10, 400), 30, fast_main->fonts->GetCurrFont(), frames, FastColour(1, 1, 1, 1));
+		fast_main->draw->Text(FastVec2(2, 2), 20, fast_main->fonts->GetCurrFont(), frames, FastColour(1, 1, 1, 1));
 		fast_main->draw->FinishShape();
 		//fast_main->draw->RightTraingle(FastVec2(500, 500), 50, FastColour(1, 1, 1, 1));
 	}
@@ -1079,7 +1077,7 @@ void FastInternal::FastFonts::LoadFont(const char * path, int font_size, FastFon
 
 		curr_font = ret;
 
-		//buffer.Clear();
+		buffer.Clear();
 	}
 
 	// --------------------------------------
