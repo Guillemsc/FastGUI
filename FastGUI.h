@@ -203,12 +203,26 @@ class FastVector
 {
 public:
 	FastVector();
+	~FastVector();
+
+	TYPE operator[] (Fuint index);
+
+	void PushBack(const TYPE& element);
 
 private:
+
+	// Internal utilities
+	void Resize(Fuint size);
 
 public:
 
 private:
+	TYPE* data_array = nullptr;
+	Fuint data_capacity = 0;
+
+	Fuint data_used = 0;
+
+	const int chunk_size = 10;
 
 };
 

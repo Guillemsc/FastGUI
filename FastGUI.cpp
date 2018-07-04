@@ -391,7 +391,7 @@ void FastBuffer::SetSize(int _size)
 {
 	Clear();
 
-	size = _size * sizeof(Fuchar);
+	size = _size;
 
 	buffer = new Fuchar[size];
 
@@ -471,12 +471,63 @@ void FastBuffer::FlipUpsideDown()
 	FAST_DEL_ARRAY(tempRow);
 }
 
+template<class TYPE>
+inline FastVector<TYPE>::FastVector()
+{
+	Resize(chunk_size);
+}
+
+template<class TYPE>
+FastVector<TYPE>::~FastVector()
+{
+}
+
+template<class TYPE>
+TYPE FastVector<TYPE>::operator[](Fuint index)
+{
+	return data_array[index];
+}
+
+template<class TYPE>
+void FastVector<TYPE>::PushBack(const TYPE& element)
+{
+	if (nodes_capacity < nodes_used + 1)
+	{
+		Resize(data_capacity + chunk_size);
+	}
+
+	data_array[data_used] = element;
+}
+
+template<class TYPE>
+inline void FastVector<TYPE>::Resize(Fuint size)
+{
+	if (data_capacity > 0)
+	{
+		if (size >= data_capacity)
+		{
+			TYPE* new_data = new TYPE[size];
+
+			memcpy(data_array, new_data, data_used * sizeof(TYPE));
+
+			data_capacity = size;
+
+			FAST_DEL_ARRAY(data_array);
+
+			data_array = new_data;
+		}
+	}
+	else
+	{
+		data_array = new TYPE[size];
+		data_capacity = size;
+	}
+}
 
 const char * Fast::GetVersion()
 {
 	return FASTGUI_VERSION;
 }
-
 
 void Fast::LoadFont(const char * filepath)
 {
@@ -536,6 +587,8 @@ void FastInternal::Init()
 		fast_main->Start();
 
 		fast_main->style->SetDefaultStyle();
+
+		FastVector<int> vec;
 	}
 }
 
