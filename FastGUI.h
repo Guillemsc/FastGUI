@@ -198,6 +198,20 @@ private:
 	int size = 0;
 };
 
+template<class TYPE>
+class FastVector
+{
+public:
+	FastVector();
+
+private:
+
+public:
+
+private:
+
+};
+
 namespace Fast
 {
 	const char* GetVersion();
