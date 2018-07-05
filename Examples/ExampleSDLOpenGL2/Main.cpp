@@ -83,17 +83,17 @@ int main(int argc, char ** argv)
 				done = true;
 		}
 
-		Fast::Window("pene", FastVec2(50, 50));
-		Fast::Window("pene1", FastVec2(1000, 50));
-		Fast::Window("pene2", FastVec2(50, 500));
-		Fast::Window("pene3", FastVec2(1000, 500));
-		Fast::Window("pene4", FastVec2(200, 500));
-		Fast::Window("pene6", FastVec2(200, 500));
-		Fast::Window("pene7", FastVec2(200, 500));
-		Fast::Window("pene8", FastVec2(200, 500));
-		Fast::Window("pene9", FastVec2(200, 500));
-		Fast::Window("pene0", FastVec2(200, 500));
-		Fast::Window("pene'", FastVec2(200, 500));
+		//Fast::Window("pene", FastVec2(50, 50));
+		//Fast::Window("pene1", FastVec2(1000, 50));
+		//Fast::Window("pene2", FastVec2(50, 500));
+		//Fast::Window("pene3", FastVec2(1000, 500));
+		//Fast::Window("pene4", FastVec2(200, 500));
+		//Fast::Window("pene6", FastVec2(200, 500));
+		//Fast::Window("pene7", FastVec2(200, 500));
+		//Fast::Window("pene8", FastVec2(200, 500));
+		//Fast::Window("pene9", FastVec2(200, 500));
+		//Fast::Window("pene0", FastVec2(200, 500));
+		//Fast::Window("pene'", FastVec2(200, 500));
 		
 		// End render
 		glViewport(0, 0, size_x, size_y);

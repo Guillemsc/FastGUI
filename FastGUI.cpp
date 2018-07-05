@@ -474,29 +474,89 @@ void FastBuffer::FlipUpsideDown()
 template<class TYPE>
 inline FastVector<TYPE>::FastVector()
 {
-	Resize(chunk_size);
+
+}
+
+template<class TYPE>
+FastVector<TYPE>::FastVector(const FastVector & element)
+{
+	Substitute(element);
 }
 
 template<class TYPE>
 FastVector<TYPE>::~FastVector()
 {
+	Clear();
 }
 
 template<class TYPE>
 TYPE FastVector<TYPE>::operator[](Fuint index)
 {
+	FAST_ASSERT(index < data_capacity, "Index out of boundaries");
 	return data_array[index];
+}
+
+template<class TYPE>
+void FastVector<TYPE>::operator=(const FastVector & element)
+{	
+	Substitute(element);
+}
+
+template<class TYPE>
+void FastVector<TYPE>::operator+=(const FastVector & element)
+{
+	Concatenate(element);
 }
 
 template<class TYPE>
 void FastVector<TYPE>::PushBack(const TYPE& element)
 {
-	if (nodes_capacity < nodes_used + 1)
+	if (data_capacity < data_used + 1)
 	{
 		Resize(data_capacity + chunk_size);
 	}
 
 	data_array[data_used] = element;
+	++data_used;
+}
+
+template<class TYPE>
+void FastVector<TYPE>::RemoveAt(Fuint index)
+{
+	FAST_ASSERT(index < data_capacity, "Index out of boundaries");
+
+	for (int i = index; i < data_used - 1; ++i)
+	{
+		data_array[i] = data_array[i + 1];
+	}
+
+	if(data_used > 0)
+		--data_used;
+
+	if (data_capacity > data_used + chunk_size)
+	{
+		Resize(data_capacity - chunk_size);
+	}
+}
+
+template<class TYPE>
+void FastVector<TYPE>::Clear()
+{
+	FAST_DEL_ARRAY(data_array);
+	data_capacity = 0;
+	data_used = 0;
+}
+
+template<class TYPE>
+Fuint FastVector<TYPE>::Size() const
+{
+	return data_used;
+}
+
+template<class TYPE>
+TYPE * FastVector<TYPE>::Data()
+{
+	return data_array;
 }
 
 template<class TYPE>
@@ -504,11 +564,11 @@ inline void FastVector<TYPE>::Resize(Fuint size)
 {
 	if (data_capacity > 0)
 	{
-		if (size >= data_capacity)
+		if (size > data_capacity)
 		{
 			TYPE* new_data = new TYPE[size];
 
-			memcpy(data_array, new_data, data_used * sizeof(TYPE));
+			memcpy(new_data, data_array, data_used * sizeof(TYPE));
 
 			data_capacity = size;
 
@@ -522,6 +582,33 @@ inline void FastVector<TYPE>::Resize(Fuint size)
 		data_array = new TYPE[size];
 		data_capacity = size;
 	}
+}
+
+template<class TYPE>
+void FastVector<TYPE>::Substitute(const FastVector & element)
+{
+	Clear();
+	Resize(element.data_used + chunk_size);
+
+	if (element.data_used > 0)
+		memcpy(data_array, element.data_array, element.data_used * sizeof(TYPE));
+
+	data_used = element.data_used;
+}
+
+template<class TYPE>
+void FastVector<TYPE>::Concatenate(const FastVector & element)
+{
+	int new_size = data_used + element.data_used;
+
+	if (new_size > data_capacity)
+	{
+		Resize(new_size);
+	}
+
+	memcpy(data_array[data_used], element.data_array, element.data_used * sizeof(TYPE));
+
+	data_used = new_size;
 }
 
 const char * Fast::GetVersion()
@@ -588,7 +675,11 @@ void FastInternal::Init()
 
 		fast_main->style->SetDefaultStyle();
 
-		FastVector<int> vec;
+		FastVector<FastVec2> vec;
+		vec.PushBack(FastVec2(32, 0));
+
+		FastVector<FastVec2> a = vec;
+		a.PushBack(FastVec2(0, 0));
 	}
 }
 
@@ -1829,12 +1920,11 @@ FastInternal::FastDrawShape::FastDrawShape()
 {
 }
 
-
 void FastInternal::FastDrawShape::AddPoint(FastVec2 point_pos)
 {
-	points.push_back(point_pos);
+	points.PushBack(point_pos);
 
-	if (points.size() == 1)
+	if (points.Size() == 1)
 	{
 		quad_size.x = point_pos.x;
 		quad_size.w = point_pos.x;
@@ -1865,28 +1955,28 @@ void FastInternal::FastDrawShape::AddTextureId(Fuint id)
 
 void FastInternal::FastDrawShape::Finish(FastColour colour)
 {
-	if (points.size() >= 3)
+	if (points.Size() >= 3)
 	{		
 		finished = true;
 
 		// Vertices, Uvs, Colours
 
-		int num_points = points.size();
+		int num_points = points.Size();
 
 		// Triangulize
 		for (int i = 0; i < num_points; i++)
 		{
 			FastVec2 curr_point = points[i];
 
-			vertices.push_back(curr_point.x);
-			vertices.push_back(curr_point.y);
-			vertices.push_back(0);
+			vertices.PushBack(curr_point.x);
+			vertices.PushBack(curr_point.y);
+			vertices.PushBack(0);
 
 			// Color for vertices
-			colours.push_back(colour.r);
-			colours.push_back(colour.g);
-			colours.push_back(colour.b);
-			colours.push_back(colour.a);
+			colours.PushBack(colour.r);
+			colours.PushBack(colour.g);
+			colours.PushBack(colour.b);
+			colours.PushBack(colour.a);
 
 			float x_uv = 0;
 			float y_uv = 0;
@@ -1901,52 +1991,52 @@ void FastInternal::FastDrawShape::Finish(FastColour colour)
 			x_uv = x_percentage;
 			y_uv = 1 - y_percentage;
 			
-			uvs.push_back(x_uv);
-			uvs.push_back(y_uv);
+			uvs.PushBack(x_uv);
+			uvs.PushBack(y_uv);
 
 			if (i > 1)
 			{
 				// Indices for triangle
-				indices.push_back(curr_indices_count);
-				indices.push_back(curr_indices_count + i - 1);
-				indices.push_back(curr_indices_count + i);
+				indices.PushBack(curr_indices_count);
+				indices.PushBack(curr_indices_count + i - 1);
+				indices.PushBack(curr_indices_count + i);
 			}
 		}
 
-		vertices_colour_uvs.insert(vertices_colour_uvs.end(), vertices.begin(), vertices.end());
-		vertices_colour_uvs.insert(vertices_colour_uvs.end(), colours.begin(), colours.end());
-		vertices_colour_uvs.insert(vertices_colour_uvs.end(), uvs.begin(), uvs.end());
+		//vertices_colour_uvs.insert(vertices_colour_uvs.end(), vertices.begin(), vertices.end());
+		//vertices_colour_uvs.insert(vertices_colour_uvs.end(), colours.begin(), colours.end());
+		//vertices_colour_uvs.insert(vertices_colour_uvs.end(), uvs.begin(), uvs.end());
 
 		curr_indices_count += num_points;
-		points.clear();
+		points.Clear();
 		quad_size = FastVec4();
 		
 		// -----------------------------------
 	}
 
-	points.clear();
+	points.Clear();
 }
 
 void FastInternal::FastDrawShape::Finish(FastColour colour, FastVec4 range_uvs)
 {
-	if (points.size() >= 3)
+	if (points.Size() >= 3)
 	{
-		int num_points = points.size();
+		int num_points = points.Size();
 
 		// Triangulize
 		for (int i = 0; i < num_points; i++)
 		{
 			FastVec2 curr_point = points[i];
 
-			vertices.push_back(curr_point.x);
-			vertices.push_back(curr_point.y);
-			vertices.push_back(0);
+			vertices.PushBack(curr_point.x);
+			vertices.PushBack(curr_point.y);
+			vertices.PushBack(0);
 
 			// Color for vertices
-			colours.push_back(colour.r);
-			colours.push_back(colour.g);
-			colours.push_back(colour.b);
-			colours.push_back(colour.a);
+			colours.PushBack(colour.r);
+			colours.PushBack(colour.g);
+			colours.PushBack(colour.b);
+			colours.PushBack(colour.a);
 
 			float ranged_x_uv = 0;
 			float ranged_y_uv = 0;
@@ -1975,15 +2065,15 @@ void FastInternal::FastDrawShape::Finish(FastColour colour, FastVec4 range_uvs)
 			}
 			ranged_y_uv = 1 - ranged_y_uv - (1 - range_uvs.y);
 
-			uvs.push_back(ranged_x_uv);
-			uvs.push_back(ranged_y_uv);
+			uvs.PushBack(ranged_x_uv);
+			uvs.PushBack(ranged_y_uv);
 
 			if (i > 1)
 			{
 				// Indices for triangle
-				indices.push_back(curr_indices_count);
-				indices.push_back(curr_indices_count + i - 1);
-				indices.push_back(curr_indices_count + i);
+				indices.PushBack(curr_indices_count);
+				indices.PushBack(curr_indices_count + i - 1);
+				indices.PushBack(curr_indices_count + i);
 			}
 		}
 
@@ -1992,7 +2082,7 @@ void FastInternal::FastDrawShape::Finish(FastColour colour, FastVec4 range_uvs)
 		//vertices_colour_uvs.insert(vertices_colour_uvs.end(), uvs.begin(), uvs.end());
 
 		curr_indices_count += num_points;
-		points.clear();
+		points.Clear();
 		quad_size = FastVec4();
 		
 		// -----------------------------------
@@ -2003,13 +2093,13 @@ void FastInternal::FastDrawShape::Clear()
 {
 	finished = false;
 
-	indices.clear();
-	vertices.clear();
-	colours.clear();
-	uvs.clear();
-	vertices_colour_uvs.clear();
+	indices.Clear();
+	vertices.Clear();
+	colours.Clear();
+	uvs.Clear();
+	vertices_colour_uvs.Clear();
 
-	points.clear();
+	points.Clear();
 }
 
 void FastInternal::FastDrawShape::SetClippingRect(const FastRect & rect)
@@ -2024,33 +2114,33 @@ Fuint * FastInternal::FastDrawShape::GetIndicesPtr()
 {
 	Fuint* ret = nullptr;
 
-	if (indices.size() > 0)
-		ret = indices.data();
+	if (indices.Size() > 0)
+		ret = indices.Data();
 	
 	return ret;
 }
 
-std::vector<Fuint> FastInternal::FastDrawShape::GetIndices()
+FastVector<Fuint> FastInternal::FastDrawShape::GetIndices()
 {
 	return indices;
 }
 
 Fuint FastInternal::FastDrawShape::GetIndicesCount()
 {
-	return indices.size();
+	return indices.Size();
 }
 
 float * FastInternal::FastDrawShape::GetVerticesPtr()
 {
 	float* ret = nullptr;
 
-	if (vertices.size() > 0)
-		ret = vertices.data();
+	if (vertices.Size() > 0)
+		ret = vertices.Data();
 	
 	return ret;
 }
 
-std::vector<float> FastInternal::FastDrawShape::GetVertices()
+FastVector<float> FastInternal::FastDrawShape::GetVertices()
 {
 	return vertices;
 }
@@ -2059,13 +2149,13 @@ float * FastInternal::FastDrawShape::GetColoursPtr()
 {
 	float* ret = nullptr;
 
-	if (colours.size() > 0)
-		ret = colours.data();
+	if (colours.Size() > 0)
+		ret = colours.Data();
 
 	return ret;
 }
 
-std::vector<float> FastInternal::FastDrawShape::GetColours()
+FastVector<float> FastInternal::FastDrawShape::GetColours()
 {
 	return colours;
 }
@@ -2074,13 +2164,13 @@ float * FastInternal::FastDrawShape::GetUvsPtr()
 {
 	float* ret = nullptr;
 
-	if (uvs.size() > 0)
-		ret = uvs.data();
+	if (uvs.Size() > 0)
+		ret = uvs.Data();
 
 	return ret;
 }
 
-std::vector<float> FastInternal::FastDrawShape::GetUvs()
+FastVector<float> FastInternal::FastDrawShape::GetUvs()
 {
 	return uvs;
 }
@@ -2089,13 +2179,13 @@ float * FastInternal::FastDrawShape::GetVerticesColourUvsPtr()
 {
 	float* ret = nullptr;
 
-	if (vertices_colour_uvs.size() > 0)
-		ret = vertices_colour_uvs.data();
+	if (vertices_colour_uvs.Size() > 0)
+		ret = vertices_colour_uvs.Data();
 
 	return ret;
 }
 
-std::vector<float> FastInternal::FastDrawShape::GetVerticesColoursUvs()
+FastVector<float> FastInternal::FastDrawShape::GetVerticesColoursUvs()
 {
 	return vertices_colour_uvs;
 }

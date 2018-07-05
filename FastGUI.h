@@ -203,24 +203,29 @@ class FastVector
 {
 public:
 	FastVector();
+	FastVector(const FastVector& element);
 	~FastVector();
 
 	TYPE operator[] (Fuint index);
+	void operator = (const FastVector& element);
+	void operator += (const FastVector& element);
 
 	void PushBack(const TYPE& element);
+	void RemoveAt(Fuint index);
+	void Clear();
+	Fuint Size() const;
+	TYPE* Data();
 
 private:
-
-	// Internal utilities
 	void Resize(Fuint size);
-
-public:
+	void Substitute(const FastVector& element);
+	void Concatenate(const FastVector& element);
 
 private:
-	TYPE* data_array = nullptr;
-	Fuint data_capacity = 0;
+	TYPE*     data_array = nullptr;
+	Fuint     data_capacity = 0;
 
-	Fuint data_used = 0;
+	Fuint     data_used = 0;
 
 	const int chunk_size = 10;
 
@@ -564,16 +569,16 @@ namespace FastInternal
 		void SetClippingRect(const FastRect& rect);
 
 		Fuint* GetIndicesPtr();
-		std::vector<Fuint> GetIndices();
+		FastVector<Fuint> GetIndices();
 		Fuint GetIndicesCount();
 		float* GetVerticesPtr();
-		std::vector<float> GetVertices();
+		FastVector<float> GetVertices();
 		float* GetColoursPtr();
-		std::vector<float> GetColours();
+		FastVector<float> GetColours();
 		float* GetUvsPtr();
-		std::vector<float> GetUvs();
+		FastVector<float> GetUvs();
 		float* GetVerticesColourUvsPtr();
-		std::vector<float> GetVerticesColoursUvs();
+		FastVector<float> GetVerticesColoursUvs();
 
 		bool GetUsesClippingRect() const;
 		FastRect GetClippingRect() const;
@@ -589,18 +594,18 @@ namespace FastInternal
 		Fuint UvsSize() const;
 
 	private:
-		std::vector<Fuint>    indices;
-		std::vector<float>    vertices;
-		std::vector<float>    colours;
-		std::vector<float>    uvs;
-		std::vector<float>    vertices_colour_uvs;
+		FastVector<Fuint>     indices;
+		FastVector<float>     vertices;
+		FastVector<float>     colours;
+		FastVector<float>     uvs;
+		FastVector<float>     vertices_colour_uvs;
 
 		Fuint				  curr_indices_count = 0;
 
 		Fuint                 texture_id = 0;
 
 		bool				  finished = false;
-		std::vector<FastVec2> points;
+		FastVector<FastVec2>  points;
 
 		bool				  uses_clipping_rect = false;
 		FastRect			  clipping_rect;
