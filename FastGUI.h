@@ -198,38 +198,103 @@ private:
 	int size = 0;
 };
 
-template<class TYPE>
-class FastVector
-{
-public:
-	FastVector();
-	FastVector(const FastVector& element);
-	~FastVector();
-
-	TYPE operator[] (Fuint index);
-	void operator = (const FastVector& element);
-	void operator += (const FastVector& element);
-
-	void PushBack(const TYPE& element);
-	void RemoveAt(int index);
-	void Clear();
-	int Size();
-	TYPE* Data();
-
-private:
-	void Resize(Fuint size);
-	void Substitute(const FastVector& element);
-	void Concatenate(const FastVector& element);
-
-private:
-	TYPE*     data_array = nullptr;
-	Fuint     data_capacity = 0;
-
-	Fuint     data_used = 0;
-
-	const int chunk_size = 2;
-
-};
+//template<class TYPE>
+//class FastVector
+//{
+//public:
+//	FastVector() { };
+//	FastVector(const FastVector& element) { Substitute(element); };
+//	~FastVector() { Clear(); };
+//
+//	TYPE operator[] (Fuint index) { FAST_ASSERT(index < data_capacity, "Index out of boundaries"); return data_array[index]; };
+//	void operator = (const FastVector & element) { Substitute(element); };
+//	void operator += (const FastVector& element) { Concatenate(element); };
+//
+//	inline void PushBack(TYPE element)
+//	{
+//		if (data_capacity < data_used + 1)
+//			Resize(data_capacity + chunk_size);
+//
+//		data_array[data_used++] = element;
+//	};
+//
+//	inline void RemoveAt(int index)
+//	{
+//		FAST_ASSERT(index < data_capacity, "Index out of boundaries");
+//
+//		for (int i = index; i < data_used - 1; ++i)
+//			data_array[i] = data_array[i + 1];
+//
+//		if (data_used > 0)
+//			--data_used;
+//
+//		if (data_capacity > data_used + chunk_size)
+//			Resize(data_capacity - chunk_size);
+//	};
+//
+//	inline void Clear() { FAST_DEL_ARRAY(data_array); data_capacity = 0; data_used = 0; };
+//	inline int Size() { return data_used; };
+//	inline TYPE* Data() { return data_array; };
+//
+//private:
+//	void Resize(Fuint size)
+//	{
+//		if (size > 0 && size > data_used)
+//		{
+//			if (data_capacity > 0)
+//			{
+//				TYPE* new_data = nullptr;
+//				new_data = new TYPE[size];
+//
+//				for (int i = 0; i < data_used; ++i)
+//					new_data[i] = data_array[i];
+//
+//				data_capacity = size;
+//
+//				FAST_DEL_ARRAY(data_array);
+//
+//				data_array = new_data;
+//			}
+//			else
+//			{
+//				data_array = new TYPE[size];
+//				data_capacity = size;
+//			}
+//		}
+//	};
+//
+//	void Substitute(const FastVector& element)
+//	{
+//		Clear();
+//		Resize(element.data_used + chunk_size);
+//
+//		for (int i = 0; i < element.data_used; ++i)
+//			data_array[i] = element.data_array[i];
+//
+//		data_used = element.data_used;
+//	};
+//
+//	void Concatenate(const FastVector& element)
+//	{
+//		int new_size = data_used + element.data_used;
+//
+//		if (new_size > data_capacity)
+//			Resize(new_size);
+//
+//		for (int i = 0; i < element.data_used; ++i)
+//			data_array[i] = element.data_array[i];
+//
+//		data_used = new_size;
+//	};
+//
+//private:
+//	TYPE *    data_array = nullptr;
+//	Fuint     data_capacity = 0;
+//
+//	Fuint     data_used = 0;
+//
+//	const int chunk_size = 1;
+//};
 
 namespace Fast
 {
@@ -277,7 +342,7 @@ namespace FastInternal
 	void SetLoadTexture(std::function<int(Fuchar* data, FastVec2 size)> load_texture);
 
 	// Shapes
-	FastVector<FastDrawShape> GetShapes();
+	std::vector<FastDrawShape> GetShapes();
 	void ClearShapes();
 
 	// IO
@@ -569,16 +634,16 @@ namespace FastInternal
 		void SetClippingRect(const FastRect& rect);
 
 		Fuint* GetIndicesPtr();
-		FastVector<Fuint> GetIndices();
+		std::vector<Fuint> GetIndices();
 		Fuint GetIndicesCount();
 		float* GetVerticesPtr();
-		FastVector<float> GetVertices();
+		std::vector<float> GetVertices();
 		float* GetColoursPtr();
-		FastVector<float> GetColours();
+		std::vector<float> GetColours();
 		float* GetUvsPtr();
-		FastVector<float> GetUvs();
+		std::vector<float> GetUvs();
 		float* GetVerticesColourUvsPtr();
-		FastVector<float> GetVerticesColoursUvs();
+		std::vector<float> GetVerticesColoursUvs();
 
 		bool GetUsesClippingRect() const;
 		FastRect GetClippingRect() const;
@@ -594,18 +659,18 @@ namespace FastInternal
 		Fuint UvsSize() const;
 
 	private:
-		FastVector<Fuint>     indices;
-		FastVector<float>     vertices;
-		FastVector<float>     colours;
-		FastVector<float>     uvs;
-		FastVector<float>     vertices_colour_uvs;
+		std::vector<Fuint>     indices;
+		std::vector<float>     vertices;
+		std::vector<float>     colours;
+		std::vector<float>     uvs;
+		std::vector<float>     vertices_colour_uvs;
 
 		Fuint				  curr_indices_count = 0;
 
 		Fuint                 texture_id = 0;
 
 		bool				  finished = false;
-		FastVector<FastVec2>  points;
+		std::vector<FastVec2>  points;
 
 		bool				  uses_clipping_rect = false;
 		FastRect			  clipping_rect;
@@ -645,12 +710,12 @@ namespace FastInternal
 
 		void BezierQuad(FastVec2 pos, FastVec2 size, FastVec2 p1, FastVec2 p2); // Not working
 
-		FastVector<FastDrawShape> GetShapes();
+		std::vector<FastDrawShape> GetShapes();
 		void ClearShapes();
 	private:
 
 	private:
-		FastVector<FastDrawShape> shapes;
+		std::vector<FastDrawShape> shapes;
 		
 		bool	      drawing_shape = false;
 		FastDrawShape curr_shape;
@@ -751,7 +816,7 @@ namespace FastInternal
 	public:
 		FastRect		rect;
 
-	private:
+	protected:
 		std::string     hash;
 		FastElementType type;
 
@@ -764,7 +829,8 @@ namespace FastInternal
 		FastWindow(std::string hash);
 		~FastWindow();
 
-		FastColour bg_colour;
+		std::string title;
+		FastColour  bg_colour;
 
 		void Draw();
 	};
