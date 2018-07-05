@@ -474,7 +474,7 @@ void FastBuffer::FlipUpsideDown()
 template<class TYPE>
 inline FastVector<TYPE>::FastVector()
 {
-
+	data_array = nullptr;
 }
 
 template<class TYPE>
@@ -521,7 +521,7 @@ void FastVector<TYPE>::PushBack(const TYPE& element)
 }
 
 template<class TYPE>
-void FastVector<TYPE>::RemoveAt(Fuint index)
+void FastVector<TYPE>::RemoveAt(int index)
 {
 	FAST_ASSERT(index < data_capacity, "Index out of boundaries");
 
@@ -548,7 +548,7 @@ void FastVector<TYPE>::Clear()
 }
 
 template<class TYPE>
-Fuint FastVector<TYPE>::Size() const
+int FastVector<TYPE>::Size()
 {
 	return data_used;
 }
@@ -1606,7 +1606,7 @@ void FastInternal::FastDraw::BezierQuad(FastVec2 pos, FastVec2 size, FastVec2 p1
 	shapes.push_back(shape);*/
 }
 
-std::vector<FastInternal::FastDrawShape> FastInternal::FastDraw::GetShapes() const
+std::vector<FastInternal::FastDrawShape> FastInternal::FastDraw::GetShapes()
 {
 	return shapes;
 }

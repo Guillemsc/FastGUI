@@ -211,9 +211,9 @@ public:
 	void operator += (const FastVector& element);
 
 	void PushBack(const TYPE& element);
-	void RemoveAt(Fuint index);
+	void RemoveAt(int index);
 	void Clear();
-	Fuint Size() const;
+	int Size();
 	TYPE* Data();
 
 private:
@@ -645,7 +645,7 @@ namespace FastInternal
 
 		void BezierQuad(FastVec2 pos, FastVec2 size, FastVec2 p1, FastVec2 p2); // Not working
 
-		std::vector<FastDrawShape> GetShapes() const;
+		std::vector<FastDrawShape> GetShapes();
 		void ClearShapes();
 	private:
 
