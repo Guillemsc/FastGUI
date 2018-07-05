@@ -227,7 +227,7 @@ private:
 
 	Fuint     data_used = 0;
 
-	const int chunk_size = 10;
+	const int chunk_size = 2;
 
 };
 
@@ -277,7 +277,7 @@ namespace FastInternal
 	void SetLoadTexture(std::function<int(Fuchar* data, FastVec2 size)> load_texture);
 
 	// Shapes
-	std::vector<FastDrawShape> GetShapes();
+	FastVector<FastDrawShape> GetShapes();
 	void ClearShapes();
 
 	// IO
@@ -645,12 +645,12 @@ namespace FastInternal
 
 		void BezierQuad(FastVec2 pos, FastVec2 size, FastVec2 p1, FastVec2 p2); // Not working
 
-		std::vector<FastDrawShape> GetShapes();
+		FastVector<FastDrawShape> GetShapes();
 		void ClearShapes();
 	private:
 
 	private:
-		std::vector<FastDrawShape> shapes;
+		FastVector<FastDrawShape> shapes;
 		
 		bool	      drawing_shape = false;
 		FastDrawShape curr_shape;

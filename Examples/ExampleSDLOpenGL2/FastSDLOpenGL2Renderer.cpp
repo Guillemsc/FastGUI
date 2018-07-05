@@ -77,31 +77,31 @@ void Fast_Render()
 	glPushMatrix();
 	glLoadIdentity();
 
-	std::vector<FastInternal::FastDrawShape> shapes = FastInternal::GetShapes();
+	////FastVector<FastInternal::FastDrawShape> shapes = FastInternal::GetShapes();
 
-	for (int i = 0; i < shapes.size(); ++i)
-	{
-		FastInternal::FastDrawShape curr_shape = shapes[i];
+	//for (int i = 0; i < shapes.Size(); ++i)
+	//{
+	//	FastInternal::FastDrawShape curr_shape = shapes[i];
 
-		glVertexPointer(curr_shape.VerticesSize(), GL_FLOAT, sizeof(float) * curr_shape.VerticesSize(), curr_shape.GetVerticesPtr());
+	//	glVertexPointer(curr_shape.VerticesSize(), GL_FLOAT, sizeof(float) * curr_shape.VerticesSize(), curr_shape.GetVerticesPtr());
 
-		glTexCoordPointer(curr_shape.UvsSize(), GL_FLOAT, sizeof(float) * curr_shape.UvsSize(), curr_shape.GetUvsPtr());
+	//	glTexCoordPointer(curr_shape.UvsSize(), GL_FLOAT, sizeof(float) * curr_shape.UvsSize(), curr_shape.GetUvsPtr());
 
-		if(curr_shape.GetTextureId() > 0)
-			glBindTexture(GL_TEXTURE_2D, curr_shape.GetTextureId());
+	//	if(curr_shape.GetTextureId() > 0)
+	//		glBindTexture(GL_TEXTURE_2D, curr_shape.GetTextureId());
 
-		glColorPointer(curr_shape.ColoursSize(), GL_FLOAT, sizeof(float) * curr_shape.ColoursSize(), curr_shape.GetColoursPtr());
+	//	glColorPointer(curr_shape.ColoursSize(), GL_FLOAT, sizeof(float) * curr_shape.ColoursSize(), curr_shape.GetColoursPtr());
 
-		if (curr_shape.GetUsesClippingRect())
-		{
-			FastRect clipping = curr_shape.GetClippingRect();
-			glScissor(clipping.x, viewport.y - clipping.yh(), clipping.w, viewport.y - clipping.y);
-		}
+	//	if (curr_shape.GetUsesClippingRect())
+	//	{
+	//		FastRect clipping = curr_shape.GetClippingRect();
+	//		glScissor(clipping.x, viewport.y - clipping.yh(), clipping.w, viewport.y - clipping.y);
+	//	}
 
-		glDrawElements(GL_TRIANGLES, curr_shape.GetIndicesCount(), GL_UNSIGNED_INT, curr_shape.GetIndicesPtr());
+	//	glDrawElements(GL_TRIANGLES, curr_shape.GetIndicesCount(), GL_UNSIGNED_INT, curr_shape.GetIndicesPtr());
 
-		glBindTexture(GL_TEXTURE_2D, 0);
-	}
+	//	glBindTexture(GL_TEXTURE_2D, 0);
+	//}
 
 	glDisableClientState(GL_COLOR_ARRAY);
 	glDisableClientState(GL_TEXTURE_COORD_ARRAY);

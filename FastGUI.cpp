@@ -472,9 +472,9 @@ void FastBuffer::FlipUpsideDown()
 }
 
 template<class TYPE>
-inline FastVector<TYPE>::FastVector()
+FastVector<TYPE>::FastVector()
 {
-	data_array = nullptr;
+
 }
 
 template<class TYPE>
@@ -560,13 +560,14 @@ TYPE * FastVector<TYPE>::Data()
 }
 
 template<class TYPE>
-inline void FastVector<TYPE>::Resize(Fuint size)
+void FastVector<TYPE>::Resize(Fuint size)
 {
-	if (data_capacity > 0)
+	if (size > 0)
 	{
-		if (size > data_capacity)
+		if (data_capacity > 0)
 		{
-			TYPE* new_data = new TYPE[size];
+			TYPE* new_data = nullptr;
+			new_data = new TYPE[size];
 
 			memcpy(new_data, data_array, data_used * sizeof(TYPE));
 
@@ -576,16 +577,16 @@ inline void FastVector<TYPE>::Resize(Fuint size)
 
 			data_array = new_data;
 		}
-	}
-	else
-	{
-		data_array = new TYPE[size];
-		data_capacity = size;
+		else
+		{
+			data_array = new TYPE[size];
+			data_capacity = size;
+		}
 	}
 }
 
 template<class TYPE>
-void FastVector<TYPE>::Substitute(const FastVector & element)
+void FastVector<TYPE>::Substitute(const FastVector& element)
 {
 	Clear();
 	Resize(element.data_used + chunk_size);
@@ -679,7 +680,6 @@ void FastInternal::Init()
 		vec.PushBack(FastVec2(32, 0));
 
 		FastVector<FastVec2> a = vec;
-		a.PushBack(FastVec2(0, 0));
 	}
 }
 
@@ -736,9 +736,9 @@ void FastInternal::SetLoadTexture(std::function<int(Fuchar*data, FastVec2 size)>
 	fast_main->load_texture = _load_texture;
 }
 
-std::vector<FastInternal::FastDrawShape> FastInternal::GetShapes()
+FastVector<FastInternal::FastDrawShape> FastInternal::GetShapes()
 {
-	std::vector<FastInternal::FastDrawShape> ret;
+	FastVector<FastInternal::FastDrawShape> ret;
 
 	if (FastInternal::Inited())
 	{
@@ -1342,7 +1342,7 @@ void FastInternal::FastDraw::FinishShape()
 		if (clipping_enabled)
 			curr_shape.SetClippingRect(curr_clipping_rect);
 
-		shapes.push_back(curr_shape);
+		shapes.PushBack(curr_shape);
 		curr_shape = FastInternal::FastDrawShape();
 
 		drawing_shape = false;
@@ -1606,14 +1606,14 @@ void FastInternal::FastDraw::BezierQuad(FastVec2 pos, FastVec2 size, FastVec2 p1
 	shapes.push_back(shape);*/
 }
 
-std::vector<FastInternal::FastDrawShape> FastInternal::FastDraw::GetShapes()
+FastVector<FastInternal::FastDrawShape> FastInternal::FastDraw::GetShapes()
 {
 	return shapes;
 }
 
 void FastInternal::FastDraw::ClearShapes()
 {
-	shapes.clear();
+	shapes.Clear();
 }
 
 FastInternal::FastWindow::FastWindow(std::string hash) : FastElement(hash, FastElementType::FAST_WINDOW)
