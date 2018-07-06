@@ -484,42 +484,17 @@ void Fast::LoadFont(const char * filepath)
 	}
 }
 
-//void Fast::Window(const char * name, FastVec2 pos)
-//{
-//	if (FastInternal::Inited())
-//	{
-//		bool created = false;
-//
-//		//FastInternal::FastWindow* win = (FastInternal::FastWindow*)fast_main->creation->HandleElement(name, FastInternal::FastElementType::FAST_WINDOW, created);
-//
-//		//if (win != nullptr)
-//		//{
-//		//	if (created)
-//		//	{
-//		//		win->rect.x = pos.x;
-//		//		win->rect.y = pos.y;
-//		//		win->rect.w = 150;
-//		//		win->rect.h = 200;
-//		//		win->title = name;
-//
-//		//		win->bg_colour = fast_main->style->colours.window_bg;
-//		//		win->bg_colour.a = fast_main->style->alpha;
-//		//	}
-//
-//		//	win->Draw();
-//		//}
-//		FastInternal::FastWindow win(name);
-//		win.rect.x = pos.x;
-//		win.rect.y = pos.y;
-//		win.rect.w = 150;
-//		win.rect.h = 200;
-//		win.title = name;
-//
-//		win.bg_colour = fast_main->style->colours.window_bg;
-//		win.bg_colour.a = fast_main->style->alpha;
-//		win.Draw();
-//	}
-//}
+FastInternal::FastWindow * Fast::Window()
+{
+	FastInternal::FastWindow* ret = nullptr;
+
+	if (FastInternal::CheckInited())
+	{
+		ret = fast_main->elements->CreateWin();
+	}
+
+	return ret;
+}
 
 void FastInternal::Init()
 {
@@ -595,6 +570,18 @@ void FastInternal::SetKeyMapping(FastInternal::FastKeyMapping fast_key, Fuint ma
 	{
 		fast_main->io->AddKeyMaping(fast_key, maping_index);
 	}
+}
+
+std::vector<FastInternal::FastWindow*> FastInternal::GetWindows()
+{
+	std::vector<FastInternal::FastWindow*> ret;
+
+	if (FastInternal::CheckInited())
+	{
+		ret = fast_main->elements->GetWindows();
+	}
+
+	return ret;
 }
 
 FastInternal::FastMain::FastMain()
@@ -745,8 +732,15 @@ void FastInternal::FastStyle::CleanUp()
 
 void FastInternal::FastStyle::SetDefaultStyle()
 {
-	alpha = 1.0f;
-	colours.window_bg = FastColour(0.2f, 0.2f, 0.2f);
+	def.alpha = 1.0f;
+
+	def.physical.win_title_bar_height = 30;
+	def.physical.win_x_padding = 6;
+	def.physical.win_y_padding = 3;
+
+	def.colours.win_bg = FastColour(0.2f, 0.2f, 0.2f);
+	def.colours.win_title_bar = FastColour(0.5f, 0.0f, 0.0f);
+	def.colours.text = FastColour(1, 1, 1);
 }
 
 FastInternal::FastFonts::FastFonts()
@@ -1720,6 +1714,23 @@ void FastInternal::FastElements::CleanUp()
 {
 }
 
+std::vector<FastInternal::FastWindow*>& FastInternal::FastElements::GetWindows()
+{
+	return windows;
+}
+
+FastInternal::FastWindow * FastInternal::FastElements::CreateWin()
+{
+	FastWindow* ret = nullptr;
+
+	ret = new FastWindow(fast_main->style->def);
+	ret->Start();
+
+	windows.push_back(ret);
+
+	return ret;
+}
+
 FastInternal::FastElement::FastElement(FastElementType type)
 {
 }
@@ -1734,4 +1745,170 @@ void FastInternal::FastElement::Start()
 
 void FastInternal::FastElement::CleanUp()
 {
+}
+
+std::vector<FastInternal::FastDrawShape>& FastInternal::FastElement::GetShapes()
+{
+	return draw_shapes;
+}
+
+void FastInternal::FastElement::SetStyle(const FastStyleElements & _style)
+{
+	style = _style;
+
+	Redraw();
+}
+
+void FastInternal::FastElement::Redraw()
+{
+	needs_redraw = true;
+}
+
+void FastInternal::FastElement::RecalucalteRect()
+{
+	if (rect.x != last_rect.x || rect.y != last_rect.y || rect.w != last_rect.w || rect.h != last_rect.h)
+		Redraw();
+
+	last_rect = rect;
+}
+
+FastInternal::FastWindow::FastWindow(const FastStyleElements& _default_style)
+{
+	style = _default_style; 
+}
+
+FastInternal::FastWindow::~FastWindow()
+{
+}
+
+void FastInternal::FastWindow::Start()
+{
+	SetPos(FastVec2(10, 10));
+	SetSize(FastVec2(250, 600));
+	title_text = "Window";
+}
+
+void FastInternal::FastWindow::Update()
+{
+	RecalucalteRect();
+	DoRedraw();
+}
+
+void FastInternal::FastWindow::CleanUp()
+{
+}
+
+void FastInternal::FastWindow::Redraw()
+{
+	needs_redraw = true;
+}
+
+std::vector<FastInternal::FastDrawShape>& FastInternal::FastWindow::GetShapes()
+{
+	return draw_shapes;
+}
+
+std::vector<FastInternal::FastElement*>& FastInternal::FastWindow::GetElements()
+{
+	return elements;
+}
+
+void FastInternal::FastWindow::SetStyle(const FastStyleElements & _style)
+{
+	style = _style;
+
+	Redraw();
+}
+
+void FastInternal::FastWindow::SetTitle(std::string title)
+{
+	title_text = title;
+
+	Redraw();
+}
+
+void FastInternal::FastWindow::SetUseTitle(bool set)
+{
+	uses_title_text = set;
+
+	Redraw();
+}
+
+void FastInternal::FastWindow::SetPos(const FastVec2 & pos)
+{
+	local_pos.x = pos.x;
+	local_pos.y = pos.y;
+}
+
+void FastInternal::FastWindow::SetSize(const FastVec2 & size)
+{
+	rect.w = size.x;
+	rect.h = size.y;
+}
+
+FastRect FastInternal::FastWindow::GetWindowDrawingRect()
+{
+	FastRect ret = rect;
+
+	if (uses_title_text)
+	{
+		ret.y += style.physical.win_title_bar_height;
+		ret.h -= style.physical.win_title_bar_height;
+	}
+	return ret;
+}
+
+void FastInternal::FastWindow::RecalucalteRect()
+{
+	rect.x = (fast_main->io->GetViewportSize().x * anchor.x) + local_pos.x;
+	rect.y = (fast_main->io->GetViewportSize().y * anchor.x) + local_pos.y;
+
+	if(rect.x != last_rect.x || rect.y != last_rect.y || rect.w != last_rect.w || rect.h != last_rect.h)
+		Redraw();
+
+	last_rect = rect;
+}
+
+void FastInternal::FastWindow::DoRedraw()
+{
+	if (needs_redraw)
+	{
+		draw_shapes.clear();
+
+		fast_main->draw->SetClipping(rect);
+
+		FastVec2 pos = rect.Pos();
+		FastVec2 size = rect.Size();
+		FastRect drawing_rect = GetWindowDrawingRect();
+		float x_padding = style.physical.win_x_padding;
+		float y_padding = style.physical.win_y_padding;
+		float bar_height = style.physical.win_title_bar_height;
+
+		fast_main->draw->StartShape();
+		FastColour bg_colour = style.colours.win_bg;
+		bg_colour.a = style.alpha;
+		fast_main->draw->Quad(drawing_rect.Pos(), drawing_rect.Size(), bg_colour);
+		draw_shapes.push_back(fast_main->draw->FinishShape());
+
+		if (uses_title_text)
+		{
+			fast_main->draw->StartShape();
+			FastColour title_bar_colour = style.colours.win_title_bar;
+			title_bar_colour.a = style.alpha;
+			fast_main->draw->Quad(pos, FastVec2(size.x, bar_height), title_bar_colour);
+			draw_shapes.push_back(fast_main->draw->FinishShape());
+
+			fast_main->draw->StartShape();
+			FastColour title_text_colour = style.colours.text;
+			title_text_colour.a = style.alpha;
+			float text_height = bar_height - (y_padding * 2);
+			fast_main->draw->Text(FastVec2(pos.x + x_padding, pos.y + y_padding),
+				text_height, fast_main->fonts->GetCurrFont(), title_text, title_text_colour);
+			draw_shapes.push_back(fast_main->draw->FinishShape());
+		}
+
+		fast_main->draw->DisableClipping();
+
+		needs_redraw = false;
+	}
 }

@@ -15,6 +15,7 @@ namespace FastImpl
 
 namespace FastInternal
 {
-	int Fast_Internal_LoadTexture(Fuchar* data, FastVec2 size);
-	void Fast_Internal_UnloadTexture();
+	int LoadTexture(Fuchar* data, FastVec2 size);
+	void UnloadTexture();
+	void RenderShape(FastInternal::FastDrawShape shape);
 }

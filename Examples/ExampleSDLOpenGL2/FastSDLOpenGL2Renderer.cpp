@@ -7,7 +7,7 @@ static double time_since_start_sec = 0;
 void FastImpl::Init()
 {
 	FastInternal::Init();
-	FastInternal::SetLoadTexture(FastInternal::Fast_Internal_LoadTexture);
+	FastInternal::SetLoadTexture(FastInternal::LoadTexture);
 	Fast::LoadFont("C://Windows//Fonts//Arial.ttf");
 
 	FastInternal::SetKeyMapping(FastInternal::FastKeyMapping::FAST_KEY_TAB, SDLK_TAB);
@@ -77,7 +77,41 @@ void FastImpl::Render()
 	glPushMatrix();
 	glLoadIdentity();
 
-	//std::vector<FastInternal::FastDrawShape> shapes = FastInternal::GetShapes();
+	std::vector<FastInternal::FastWindow*> windows = FastInternal::GetWindows();
+
+	for (std::vector<FastInternal::FastWindow*>::iterator it = windows.begin(); it != windows.end(); ++it)
+	{
+		FastInternal::FastWindow* curr_window = (*it);
+
+		curr_window->Update();
+
+		std::vector<FastInternal::FastDrawShape> shapes = curr_window->GetShapes();
+
+		for (std::vector<FastInternal::FastDrawShape>::iterator sh = shapes.begin(); sh != shapes.end(); ++sh)
+		{
+			FastInternal::FastDrawShape curr_shape = (*sh);
+
+			RenderShape(curr_shape);
+		}
+
+		std::vector<FastInternal::FastElement*> elements = curr_window->GetElements();
+
+		for (std::vector<FastInternal::FastElement*>::iterator el = elements.begin(); el != elements.end(); ++el)
+		{
+			FastInternal::FastElement* curr_element = (*el);
+
+			curr_element->Update();
+
+			std::vector<FastInternal::FastDrawShape> el_shapes = curr_element->GetShapes();
+
+			for (std::vector<FastInternal::FastDrawShape>::iterator sh = el_shapes.begin(); sh != el_shapes.end(); ++sh)
+			{
+				FastInternal::FastDrawShape curr_shape = (*sh);
+
+				RenderShape(curr_shape);
+			}
+		}
+	}
 
 	//for (int i = 0; i < shapes.size(); ++i)
 	//{
@@ -127,7 +161,7 @@ void FastImpl::Quit()
 	FastInternal::Quit();
 }
 
-int FastInternal::Fast_Internal_LoadTexture(Fuchar* data, FastVec2 size)
+int FastInternal::LoadTexture(Fuchar* data, FastVec2 size)
 {
 	int id = 0;
 
@@ -149,6 +183,30 @@ int FastInternal::Fast_Internal_LoadTexture(Fuchar* data, FastVec2 size)
 	return id;
 }
 
-void FastInternal::Fast_Internal_UnloadTexture()
+void FastInternal::UnloadTexture()
 {
+}
+
+void FastInternal::RenderShape(FastInternal::FastDrawShape curr_shape)
+{
+	FastVec2 viewport = FastInternal::GetViewport();
+
+	glVertexPointer(curr_shape.VerticesSize(), GL_FLOAT, sizeof(float) * curr_shape.VerticesSize(), curr_shape.GetVerticesPtr());
+
+	glTexCoordPointer(curr_shape.UvsSize(), GL_FLOAT, sizeof(float) * curr_shape.UvsSize(), curr_shape.GetUvsPtr());
+
+	if (curr_shape.GetTextureId() > 0)
+		glBindTexture(GL_TEXTURE_2D, curr_shape.GetTextureId());
+
+	glColorPointer(curr_shape.ColoursSize(), GL_FLOAT, sizeof(float) * curr_shape.ColoursSize(), curr_shape.GetColoursPtr());
+
+	if (curr_shape.GetUsesClippingRect())
+	{
+		FastRect clipping = curr_shape.GetClippingRect();
+		glScissor(clipping.x, viewport.y - clipping.yh(), clipping.w, viewport.y - clipping.y);
+	}
+
+	glDrawElements(GL_TRIANGLES, curr_shape.GetIndicesCount(), GL_UNSIGNED_INT, curr_shape.GetIndicesPtr());
+
+	glBindTexture(GL_TEXTURE_2D, 0);
 }

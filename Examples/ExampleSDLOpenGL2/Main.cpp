@@ -68,6 +68,16 @@ int main(int argc, char ** argv)
 
 	FastImpl::Init();
 
+	FastInternal::FastWindow* win = Fast::Window();
+	win->SetTitle("Testing window");
+
+	//for (int i = 0; i < 100; ++i)
+	//{
+	//	FastInternal::FastWindow* win = Fast::Window();
+	//	win->SetPos(FastVec2(i * 3, 10));
+	//}
+
+
 	// Main loop
 	bool done = false;
 	while (!done)
@@ -83,13 +93,6 @@ int main(int argc, char ** argv)
 				done = true;
 		}
 	
-		//Fast::Window("Window 1", FastVec2(50, 50));
-
-		//for (int i = 0; i < 15; ++i)
-		//{
-		//	Fast::Window(std::to_string(i).c_str(), FastVec2(50 + i * 4, i* 4));
-		//}
-		
 		// End render
 		glViewport(0, 0, size_x, size_y);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

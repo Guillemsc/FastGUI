@@ -214,18 +214,6 @@ private:
 
 // ---------------------------------------------------------------------------------------------------------
 
-namespace Fast
-{
-	// -----------------------------------------------------------------------------------------------------
-	// User exposed functions ------------------------------------------------------------------------------
-
-	const char* GetVersion();
-
-	void LoadFont(const char* filepath);
-
-	// -----------------------------------------------------------------------------------------------------
-}
-
 namespace FastInternal
 {
 	// -----------------------------------------------------------------------------------------------------
@@ -268,6 +256,9 @@ namespace FastInternal
 	// Io
 	FastVec2 GetViewport();
 	void SetKeyMapping(FastInternal::FastKeyMapping fast_key, Fuint maping_index);
+
+	// Elements
+	std::vector<FastWindow*> GetWindows();
 
 	// -----------------------------------------------------------------------------------------------------
 
@@ -405,34 +396,23 @@ namespace FastInternal
 
 	struct FastStylePhyisical
 	{
-		FastVec2 window_padding;
-		FastVec2 window_min_size;
-		float    window_rounding = 0.0f;
-		FastVec2 frame_padding;
-		FastVec2 item_spacing;
-		FastVec2 item_inner_spacing;
-		float    indent_spacing = 0.0f;
-		float    scrollbar_size = 0.0f;
-		float    scrollbar_rounding = 0.0f;
-		float    grab_min_size = 0.0f;
-		float    grab_rounding = 0.0f;
+		float win_title_bar_height;
+		float win_x_padding;
+		float win_y_padding;
 	};
 
 	struct FastStyleColours
 	{
+		FastColour win_bg;
+		FastColour win_title_bar;
 		FastColour text;
-		FastColour text_disabled;
-		FastColour window_bg;
-		FastColour child_window_bg;
-		FastColour popup_bg;
-		FastColour border;
-		FastColour scroll_bar_bg;
-		FastColour scroll_bar_overed;
-		FastColour scroll_bar_clicked;
-		FastColour button;
-		FastColour button_over;
-		FastColour button_clicked;
-		FastColour spearator;
+	};
+
+	struct FastStyleElements
+	{
+		float			   alpha = 1.0f;
+		FastStylePhyisical physical;
+		FastStyleColours   colours;
 	};
 
 	class FastStyle : public FastModule
@@ -447,9 +427,7 @@ namespace FastInternal
 		void SetDefaultStyle();
 
 	public:
-		float			   alpha = 1.0f;
-		FastStylePhyisical physical;
-		FastStyleColours   colours;
+		FastStyleElements def;
 	};
 
 	// ----------------------------------------------------------------------------
@@ -592,7 +570,7 @@ namespace FastInternal
 		Fuint                 texture_id = 0;
 
 		bool				  finished = false;
-		std::vector<FastVec2>  points;
+		std::vector<FastVec2> points;
 
 		bool				  uses_clipping_rect = false;
 		FastRect			  clipping_rect;
@@ -651,7 +629,6 @@ namespace FastInternal
 
 	enum FastElementType
 	{
-		FAST_WINDOW,
 		FAST_BUTTON,
 		FAST_TEXT,
 	};
@@ -662,19 +639,75 @@ namespace FastInternal
 		FastElement(FastElementType type);
 		~FastElement();
 
-		virtual void Start();
-		virtual void CleanUp();
+		virtual void Start() = 0;
+		virtual void Update() = 0;
+		virtual void CleanUp() = 0;
+		void RecalucalteRect();
 
-		virtual void Draw() = 0;
+		std::vector<FastDrawShape>& GetShapes();
 
-	public:
-		FastRect		rect;
+		void SetStyle(const FastStyleElements& style);
+		
+	protected:
+		void Redraw();
+		virtual void DoRedraw() = 0;
 
 	protected:
-		std::string     hash;
 		FastElementType type;
+		FastStyleElements style;
 
-		bool            interactable = false;
+		std::vector<FastDrawShape> draw_shapes;
+		bool     needs_redraw = false;
+
+		FastRect rect;
+		FastRect last_rect;
+	};
+
+	class FastWindow 
+	{
+	public:
+		FastWindow(const FastStyleElements& default_style);
+		~FastWindow();
+
+		void Start();
+		void Update();
+		void CleanUp();
+		
+		std::vector<FastDrawShape>& GetShapes();
+		std::vector<FastElement*>& GetElements();
+
+		void SetStyle(const FastStyleElements& style);
+		void SetTitle(std::string title);
+		void SetUseTitle(bool set);
+		void SetPos(const FastVec2& pos);
+		void SetSize(const FastVec2& size);
+
+	private:
+		FastRect GetWindowDrawingRect();
+		void Redraw();
+		void DoRedraw();
+		void RecalucalteRect();
+
+	private:
+		FastStyleElements style;
+
+		std::vector<FastDrawShape> draw_shapes;
+		bool     needs_redraw = false;
+
+		std::vector<FastElement*> elements;
+
+		FastRect rect;
+		FastRect last_rect;
+
+		FastVec2 local_pos;
+		FastVec2 anchor;
+
+		bool     interactable = true;
+		bool	 visible = true;
+		bool     draggable = false;
+
+		std::string title_text;
+		bool	 uses_title_text = true;
 	};
 
 	class FastElements : public FastModule
@@ -685,10 +718,32 @@ namespace FastInternal
 
 		void Start();
 		void CleanUp();
+
+		std::vector<FastWindow*>& GetWindows();
+
+		FastWindow* CreateWin();
+
+	private:
+		std::vector<FastWindow*> windows;
 	};
 
 
 	// -----------------------------------------------------------------------------------------------------
 }
+
+namespace Fast
+{
+	// -----------------------------------------------------------------------------------------------------
+	// User exposed functions ------------------------------------------------------------------------------
+
+	const char* GetVersion();
+
+	void LoadFont(const char* filepath);
+
+	FastInternal::FastWindow* Window();
+
+	// -----------------------------------------------------------------------------------------------------
+}
+
 
 #endif // !FASTUI
