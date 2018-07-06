@@ -85,13 +85,7 @@ int main(int argc, char ** argv)
 	
 		Fast::Window("Window 1", FastVec2(50, 50));
 
-
-		Fast::Window("Window 2", FastVec2(350, 50));
-
-
-		Fast::Window("Window 3", FastVec2(650, 50));
-
-		for (int i = 0; i < 400; ++i)
+		for (int i = 0; i < 15; ++i)
 		{
 			Fast::Window(std::to_string(i).c_str(), FastVec2(50 + i * 4, i* 4));
 		}
