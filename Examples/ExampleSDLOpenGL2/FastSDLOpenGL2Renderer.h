@@ -4,12 +4,14 @@
 
 #include "..\..\FastGUI.h"
 
-void Fast_Init();
-void Fast_NewFrame(SDL_Window* window);
-void Fast_Render();
-void FastProcessEvent(SDL_Event* ev);
-void Fast_EndFrame();
-void Fast_Quit();
+namespace FastImpl
+{
+	void Init();
+	void NewFrame(SDL_Window* window);
+	void Render();
+	void ProcessEvent(SDL_Event* ev);
+	void Quit();
+}
 
 namespace FastInternal
 {

@@ -4,7 +4,7 @@
 
 static double time_since_start_sec = 0;
 
-void Fast_Init()
+void FastImpl::Init()
 {
 	FastInternal::Init();
 	FastInternal::SetLoadTexture(FastInternal::Fast_Internal_LoadTexture);
@@ -28,7 +28,7 @@ void Fast_Init()
 	FastInternal::SetKeyMapping(FastInternal::FastKeyMapping::FAST_KEY_BACKSPACE, SDLK_BACKSPACE);
 }
 
-void Fast_NewFrame(SDL_Window* window)
+void FastImpl::NewFrame(SDL_Window* window)
 {
 	int size_x, size_y = 0;
 	SDL_GetWindowSize(window, &size_x, &size_y);
@@ -44,7 +44,7 @@ void Fast_NewFrame(SDL_Window* window)
 	FastInternal::NewFrame(FastVec2(size_x, size_y), FastVec2(mouse_x, mouse_y), delta_dime);
 }
 
-void Fast_Render()
+void FastImpl::Render()
 {
 	FastVec2 viewport = FastInternal::GetViewport();
 
@@ -77,31 +77,31 @@ void Fast_Render()
 	glPushMatrix();
 	glLoadIdentity();
 
-	std::vector<FastInternal::FastDrawShape> shapes = FastInternal::GetShapes();
+	//std::vector<FastInternal::FastDrawShape> shapes = FastInternal::GetShapes();
 
-	for (int i = 0; i < shapes.size(); ++i)
-	{
-		FastInternal::FastDrawShape curr_shape = shapes[i];
+	//for (int i = 0; i < shapes.size(); ++i)
+	//{
+	//	FastInternal::FastDrawShape curr_shape = shapes[i];
 
-		glVertexPointer(curr_shape.VerticesSize(), GL_FLOAT, sizeof(float) * curr_shape.VerticesSize(), curr_shape.GetVerticesPtr());
+	//	glVertexPointer(curr_shape.VerticesSize(), GL_FLOAT, sizeof(float) * curr_shape.VerticesSize(), curr_shape.GetVerticesPtr());
 
-		glTexCoordPointer(curr_shape.UvsSize(), GL_FLOAT, sizeof(float) * curr_shape.UvsSize(), curr_shape.GetUvsPtr());
+	//	glTexCoordPointer(curr_shape.UvsSize(), GL_FLOAT, sizeof(float) * curr_shape.UvsSize(), curr_shape.GetUvsPtr());
 
-		if(curr_shape.GetTextureId() > 0)
-			glBindTexture(GL_TEXTURE_2D, curr_shape.GetTextureId());
+	//	if(curr_shape.GetTextureId() > 0)
+	//		glBindTexture(GL_TEXTURE_2D, curr_shape.GetTextureId());
 
-		glColorPointer(curr_shape.ColoursSize(), GL_FLOAT, sizeof(float) * curr_shape.ColoursSize(), curr_shape.GetColoursPtr());
+	//	glColorPointer(curr_shape.ColoursSize(), GL_FLOAT, sizeof(float) * curr_shape.ColoursSize(), curr_shape.GetColoursPtr());
 
-		if (curr_shape.GetUsesClippingRect())
-		{
-			FastRect clipping = curr_shape.GetClippingRect();
-			glScissor(clipping.x, viewport.y - clipping.yh(), clipping.w, viewport.y - clipping.y);
-		}
+	//	if (curr_shape.GetUsesClippingRect())
+	//	{
+	//		FastRect clipping = curr_shape.GetClippingRect();
+	//		glScissor(clipping.x, viewport.y - clipping.yh(), clipping.w, viewport.y - clipping.y);
+	//	}
 
-		glDrawElements(GL_TRIANGLES, curr_shape.GetIndicesCount(), GL_UNSIGNED_INT, curr_shape.GetIndicesPtr());
+	//	glDrawElements(GL_TRIANGLES, curr_shape.GetIndicesCount(), GL_UNSIGNED_INT, curr_shape.GetIndicesPtr());
 
-		glBindTexture(GL_TEXTURE_2D, 0);
-	}
+	//	glBindTexture(GL_TEXTURE_2D, 0);
+	//}
 
 	glDisableClientState(GL_COLOR_ARRAY);
 	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
@@ -117,17 +117,12 @@ void Fast_Render()
 	glScissor(last_scissor_box[0], last_scissor_box[1], (GLsizei)last_scissor_box[2], (GLsizei)last_scissor_box[3]);
 }
 
-void FastProcessEvent(SDL_Event * ev)
+void FastImpl::ProcessEvent(SDL_Event * ev)
 {
 
 }
 
-void Fast_EndFrame()
-{
-	FastInternal::EndFrame();
-}
-
-void Fast_Quit()
+void FastImpl::Quit()
 {
 	FastInternal::Quit();
 }

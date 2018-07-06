@@ -66,43 +66,41 @@ int main(int argc, char ** argv)
 	int size_x; int size_y;
 	SDL_GetWindowSize(window, &size_x, &size_y);
 
-	Fast_Init();
+	FastImpl::Init();
 
 	// Main loop
 	bool done = false;
 	while (!done)
 	{
-		Fast_NewFrame(window);
+		FastImpl::NewFrame(window);
 
 		SDL_Event event;
 		while (SDL_PollEvent(&event))
 		{
-			FastProcessEvent(&event);
+			FastImpl::ProcessEvent(&event);
 
 			if (event.type == SDL_QUIT)
 				done = true;
 		}
 	
-		Fast::Window("Window 1", FastVec2(50, 50));
+		//Fast::Window("Window 1", FastVec2(50, 50));
 
-		for (int i = 0; i < 15; ++i)
-		{
-			Fast::Window(std::to_string(i).c_str(), FastVec2(50 + i * 4, i* 4));
-		}
+		//for (int i = 0; i < 15; ++i)
+		//{
+		//	Fast::Window(std::to_string(i).c_str(), FastVec2(50 + i * 4, i* 4));
+		//}
 		
 		// End render
 		glViewport(0, 0, size_x, size_y);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glLoadIdentity();
 
-		Fast_Render();
-
-		Fast_EndFrame();
+		FastImpl::Render();
 
 		SDL_GL_SwapWindow(window);
 	}
 
-	Fast_Quit();
+	FastImpl::Quit();
 
 	SDL_GL_DeleteContext(glcontext);
 	SDL_DestroyWindow(window);

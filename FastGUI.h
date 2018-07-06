@@ -9,14 +9,20 @@
 #include <assert.h>
 #include <functional>
 
-// STB TRUETYPE DEFINITION
+#define FASTGUI_VERSION "0.01"
+
+// ---------------------------------------------------------------------------------------------------------
+// STB Truetype --------------------------------------------------------------------------------------------
+
 #define STB_TRUETYPE_IMPLEMENTATION
 #define STBTT_STATIC
 #include "stb_truetype.h"
 
-#define FASTGUI_VERSION "0.01"
+// ---------------------------------------------------------------------------------------------------------
 
-// DEFINES
+// ---------------------------------------------------------------------------------------------------------
+// Defines -------------------------------------------------------------------------------------------------
+
 #define FAST_DEL( x )		\
     {                       \
     if( x != nullptr )      \
@@ -48,14 +54,19 @@
 
 #define FAST_ASSERT(_EXPR, _MSG) assert(_EXPR && _MSG)
 
-// VARIABLE_DEFINES
-#define VECTOR_CHUNK_SIZE 1
+// ---------------------------------------------------------------------------------------------------------
 
-// TYPEDEFS
+// ---------------------------------------------------------------------------------------------------------
+// Typedefs ------------------------------------------------------------------------------------------------
+
 typedef unsigned int Fuint;
 typedef unsigned char Fuchar;
 
-// CLASSES
+// ---------------------------------------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------------------------------------
+// Custom general use classes ------------------------------------------------------------------------------
+
 class FastVec2
 {
 public:
@@ -201,174 +212,25 @@ private:
 	int size = 0;
 };
 
-//template<typename T>
-//class FastVector
-//{
-//public:
-//	int                         size;
-//	int                         Capacity;
-//	T*                          Data;
-//
-//	typedef T                   value_type;
-//	typedef value_type*         iterator;
-//	typedef const value_type*   const_iterator;
-//
-//	FastVector() { size = Capacity = 0; Data = NULL; }
-//	~FastVector() { if (Data) FAST_DEL_ARRAY(Data); }
-//
-//	inline bool                 empty() const { return size == 0; }
-//	inline int                  Size() const { return size; }
-//	inline int                  capacity() const { return Capacity; }
-//	inline value_type&			At(int i){ return Data[i]; }
-//
-//	inline value_type&          operator[](int i) { return Data[i]; }
-//	inline const value_type&    operator[](int i) const { return Data[i]; }
-//
-//	inline void                 Clear() { if (Data) { size = Capacity = 0; FAST_DEL_ARRAY(Data); Data = NULL; } }
-//	inline iterator             begin() { return Data; }
-//	inline const_iterator       begin() const { return Data; }
-//	inline iterator             end() { return Data + size; }
-//	inline const_iterator       end() const { return Data + size; }
-//	inline value_type&          front() { return Data[0]; }
-//	inline const value_type&    front() const { return Data[0]; }
-//	inline value_type&          back() { return Data[size - 1]; }
-//	inline const value_type&    back() const { return Data[size - 1]; }
-//	inline void                 swap(FastVector<T>& rhs) { int rhs_size = rhs.size; rhs.size = size; size = rhs_size; int rhs_cap = rhs.Capacity; rhs.Capacity = Capacity; Capacity = rhs_cap; value_type* rhs_data = rhs.Data; rhs.Data = Data; Data = rhs_data; }
-//
-//	inline int                  _grow_capacity(int size) const { int new_capacity = Capacity ? (Capacity + Capacity / 2) : 8; return new_capacity > size ? new_capacity : size; }
-//
-//	inline void                 resize(int new_size) { if (new_size > Capacity) reserve(_grow_capacity(new_size)); size = new_size; }
-//	inline void                 resize(int new_size, const T& v) { if (new_size > Capacity) reserve(_grow_capacity(new_size)); if (new_size > size) for (int n = size; n < new_size; n++) Data[n] = v; size = new_size; }
-//	inline void                 reserve(int new_capacity)
-//	{
-//		if (new_capacity <= Capacity) return;
-//		T* new_data = new T[(size_t)new_capacity * sizeof(T)];
-//		if (Data)
-//			memcpy(new_data, Data, (size_t)size * sizeof(T));
-//		FAST_DEL_ARRAY(Data);
-//		Data = new_data;
-//		Capacity = new_capacity;
-//	}
-//
-//	inline void                 PushBack(const value_type& v) { if (size == Capacity) reserve(_grow_capacity(size + 1)); Data[size++] = v; }
-//	inline void                 pop_back() { size--; }
-//
-//	inline iterator             erase(const_iterator it) { IM_ASSERT(it >= Data && it < Data + size); const ptrdiff_t off = it - Data; memmove(Data + off, Data + off + 1, ((size_t)size - (size_t)off - 1) * sizeof(value_type)); size--; return Data + off; }
-//	inline iterator             insert(const_iterator it, const value_type& v) { IM_ASSERT(it >= Data && it <= Data + size); const ptrdiff_t off = it - Data; if (size == Capacity) reserve(Capacity ? Capacity * 2 : 4); if (off < (int)size) memmove(Data + off + 1, Data + off, ((size_t)size - (size_t)off) * sizeof(value_type)); Data[off] = v; size++; return Data + off; }
-//};
-
-//template<class TYPE>
-//class FastVector
-//{
-//public:
-//	TYPE *    data_array = nullptr;
-//	Fuint     data_capacity = 0;
-//
-//	Fuint     data_used = 0;
-//
-//public:
-//	FastVector() { data_array = nullptr; data_used, data_capacity = 0; };
-//	~FastVector() { Clear(); };
-//
-//	inline TYPE& operator[] (Fuint index) { FAST_ASSERT(index < data_capacity, "Index out of boundaries"); return data_array[index]; };
-//	inline void operator += (const FastVector& element) { Concatenate(element); };
-//
-//	inline void PushBack(const TYPE& element)
-//	{
-//		if (data_capacity < data_used + 1)
-//			Resize(data_capacity + VECTOR_CHUNK_SIZE);
-//
-//		data_array[data_used++] = element;
-//	};
-//
-//	inline TYPE& At(Fuint index) { return data_array[index]; }
-//
-//	inline void RemoveAt(int index)
-//	{
-//		FAST_ASSERT(index < data_capacity, "Index out of boundaries");
-//
-//		for (int i = index; i < data_used - 1; ++i)
-//			data_array[i] = data_array[i + 1];
-//
-//		if (data_used > 0)
-//			--data_used;
-//
-//		if (data_capacity > data_used + VECTOR_CHUNK_SIZE)
-//			Resize(data_capacity - chunk_size);
-//	};
-//
-//	inline void Clear() { FAST_DEL_ARRAY(data_array); data_capacity = 0; data_used = 0; };
-//	inline int Size() { return data_used; };
-//	inline TYPE* Data() { return data_array; };
-//
-//	void Resize(Fuint size)
-//	{
-//		if (size > 0 && size > data_used)
-//		{
-//			if (data_capacity > 0)
-//			{
-//				TYPE* new_data = nullptr;
-//				new_data = new TYPE[size];
-//
-//				std::memcpy(new_data, data_array, data_used * sizeof(TYPE));
-//				/*for (int i = 0; i < data_used; ++i)
-//					new_data[i] = data_array[i];*/
-//
-//				data_capacity = size;
-//
-//				FAST_DEL_ARRAY(data_array);
-//
-//				data_array = new_data;
-//			}
-//			else
-//			{
-//				data_array = new TYPE[size];
-//				data_capacity = size;
-//			}
-//		}
-//	};
-//
-//	void Substitute(const FastVector& element)
-//	{
-//		Clear();
-//		Resize(element.data_used + chunk_size);
-//
-//		std::memcpy(data_array, element.data_array, element.data_used * sizeof(TYPE));
-//		//for (int i = 0; i < element.data_used; ++i)
-//		//	data_array[i] = element.data_array[i];
-//
-//		data_used = element.data_used;
-//	};
-//
-//	void Concatenate(const FastVector& element)
-//	{
-//		int new_size = data_used + element.data_used;
-//
-//		if (new_size > data_capacity)
-//			Resize(new_size);
-//
-//		for (int i = 0; i < element.data_used; ++i)
-//			data_array[i] = element.data_array[i];
-//
-//		data_used = new_size;
-//	};
-//};
+// ---------------------------------------------------------------------------------------------------------
 
 namespace Fast
 {
+	// -----------------------------------------------------------------------------------------------------
+	// User exposed functions ------------------------------------------------------------------------------
+
 	const char* GetVersion();
 
 	void LoadFont(const char* filepath);
 
-	void PushID(const char* id);
-	void PopID();
-
-	void Window(const char* name, FastVec2 pos);
+	// -----------------------------------------------------------------------------------------------------
 }
 
 namespace FastInternal
 {
-	// Forward declarations
+	// -----------------------------------------------------------------------------------------------------
+	// Forward declarations --------------------------------------------------------------------------------
+
 	class FastMain;
 
 	class FastCreation;
@@ -390,24 +252,38 @@ namespace FastInternal
 	class FastDraw;
 	class FastDrawShape;
 
-	class FastHash;
+	class FastElements;
 
-	// General implementation functions
+	// -----------------------------------------------------------------------------------------------------
+
+	// -----------------------------------------------------------------------------------------------------
+	// Internal exposed functions --------------------------------------------------------------------------
+
+	// Implementation
 	void Init();
 	void Quit();
 	void NewFrame(FastVec2 window_size, FastVec2 mouse_pos, float delta_time);
-	void EndFrame();
 	void SetLoadTexture(std::function<int(Fuchar* data, FastVec2 size)> load_texture);
 
-	// Shapes
-	std::vector<FastDrawShape> GetShapes();
-	void ClearShapes();
-
-	// IO
+	// Io
 	FastVec2 GetViewport();
 	void SetKeyMapping(FastInternal::FastKeyMapping fast_key, Fuint maping_index);
 
-	// Main module
+	// -----------------------------------------------------------------------------------------------------
+
+	// -----------------------------------------------------------------------------------------------------
+	// Internal classes ------------------------------------------------------------------------------------
+
+	//-----------------------------------------------------------------------------
+	// Main Module
+	//-----------------------------------------------------------------------------
+	class FastModule
+	{
+	public:
+		virtual void Start() = 0;
+		virtual void CleanUp() = 0;
+	};
+
 	class FastMain
 	{
 	public:
@@ -419,55 +295,26 @@ namespace FastInternal
 
 		std::function<int(Fuchar* data, FastVec2 size)> load_texture;
 
+	private:
+		void AddModule(FastModule* mod);
+
 	public:
-		FastCreation * creation = nullptr;
 		FastIO*        io = nullptr;
 		FastStyle*     style = nullptr;
 		FastFonts*     fonts = nullptr;
 		FastDraw*      draw = nullptr;
+		FastElements*  elements = nullptr;
 
 	private:
+		std::vector<FastModule*> modules;
 	};
 
-	bool Inited();
+	bool CheckInited();
 
-	class FastModule
-	{
-	public:
-		virtual void Start() = 0;
-		virtual void CleanUp() = 0;
-	};
-
-	class FastCreation : public FastModule
-	{
-	public:
-		FastCreation();
-		~FastCreation();
-
-		void Start();
-		void CleanUp();
-
-		FastElement* HandleElement(const char* name, FastInternal::FastElementType type, bool& created);
-
-		FastElement* CreateElement(std::string hash, FastInternal::FastElementType type);
-		FastElement* GetElement(std::string hash);
-
-		void SetElementAlive(std::string hash);
-		void RemoveDeadElements();
-
-		void PushID(std::string id);
-		void PopID();
-		std::string GetCurrID() const;
-
-	private:
-		std::map<std::string, FastElement*> elements;
-		std::vector<std::string> elements_alive;
-
-		std::vector<std::string> ids;
-	};
+	// ----------------------------------------------------------------------------
 
 	//-----------------------------------------------------------------------------
-	// FAST INPUT OUTPUT
+	// Input Output
 	//-----------------------------------------------------------------------------
 
 	enum FastKeyMapping
@@ -553,7 +400,7 @@ namespace FastInternal
 	// ----------------------------------------------------------------------------
 
 	//-----------------------------------------------------------------------------
-	// FAST STYLE
+	// Style
 	//-----------------------------------------------------------------------------
 
 	struct FastStylePhyisical
@@ -608,7 +455,7 @@ namespace FastInternal
 	// ----------------------------------------------------------------------------
 
 	//-----------------------------------------------------------------------------
-	// FAST FONTS
+	// Fonts
 	//-----------------------------------------------------------------------------
 
 	class FastFont
@@ -693,7 +540,7 @@ namespace FastInternal
 	// ----------------------------------------------------------------------------
 
 	//-----------------------------------------------------------------------------
-	// FAST DRAW
+	// Draw
 	//-----------------------------------------------------------------------------
 
 	class FastDrawShape
@@ -764,7 +611,7 @@ namespace FastInternal
 
 		// Shape management
 		void StartShape();
-		void FinishShape();
+		FastDrawShape FinishShape();
 
 		// Clipping
 		void SetClipping(const FastRect& set);
@@ -788,13 +635,7 @@ namespace FastInternal
 
 		void BezierQuad(FastVec2 pos, FastVec2 size, FastVec2 p1, FastVec2 p2); // Not working
 
-		std::vector<FastDrawShape>& GetShapes();
-		void ClearShapes();
 	private:
-
-	private:
-		std::vector<FastDrawShape> shapes;
-		
 		bool	      drawing_shape = false;
 		FastDrawShape curr_shape;
 
@@ -805,74 +646,8 @@ namespace FastInternal
 	// ----------------------------------------------------------------------------
 
 	//-----------------------------------------------------------------------------
-	// FAST HASH
-	// Converted to C++ class by Frank Thilo(thilo@unix-ag.org)
-	// For bzflag(http:://www.bzflag.org)
+	// Fast Elements
 	//-----------------------------------------------------------------------------
-
-	//class FastHash
-	//{
-	//public: 
-	//	FastHash();
-	//	~FastHash();
-
-	//	std::string GetMD5(std::string text);
-
-	//private:
-	//	typedef unsigned int size_type; 
-
-	//	std::string hexdigest() const;
-
-	//	void update(const unsigned char *buf, size_type length);
-	//	void update(const char *buf, size_type length);
-	//	void finalize();
-
-	//	void init();
-	//	typedef unsigned char uint1;
-	//	typedef unsigned int uint4;  
-	//	enum { blocksize = 64 };
-
-	//	void transform(const uint1 block[blocksize]);
-	//	static void decode(uint4 output[], const uint1 input[], size_type len);
-	//	static void encode(uint1 output[], const uint4 input[], size_type len);
-
-	//	bool finalized;
-	//	uint1 buffer[blocksize]; 
-	//	uint4 count[2];   
-	//	uint4 state[4];   
-	//	uint1 digest[16]; 
-
-	//	static inline uint4 F(uint4 x, uint4 y, uint4 z);
-	//	static inline uint4 G(uint4 x, uint4 y, uint4 z);
-	//	static inline uint4 H(uint4 x, uint4 y, uint4 z);
-	//	static inline uint4 I(uint4 x, uint4 y, uint4 z);
-	//	static inline uint4 rotate_left(uint4 x, int n);
-	//	static inline void FF(uint4 &a, uint4 b, uint4 c, uint4 d, uint4 x, uint4 s, uint4 ac);
-	//	static inline void GG(uint4 &a, uint4 b, uint4 c, uint4 d, uint4 x, uint4 s, uint4 ac);
-	//	static inline void HH(uint4 &a, uint4 b, uint4 c, uint4 d, uint4 x, uint4 s, uint4 ac);
-	//	static inline void II(uint4 &a, uint4 b, uint4 c, uint4 d, uint4 x, uint4 s, uint4 ac);
-
-	//private:
-	//	int S11 = 7;
-	//	int S12 = 12;
-	//	int	S13 = 17;
-	//	int	S14 = 22;
-	//	int	S21 = 5;
-	//	int	S22 = 9;
-	//	int	S23 = 14;
-	//	int	S24 = 20;
-	//	int S31 = 4;
-	//	int S32 = 11;
-	//	int S33 = 16;
-	//	int S34 = 23;
-	//	int S41 = 6;
-	//	int S42 = 10;
-	//	int S43 = 15;
-	//	int S44 = 21;
-
-	//};
-
-	//// ----------------------------------------------------------------------------
 
 	enum FastElementType
 	{
@@ -884,10 +659,11 @@ namespace FastInternal
 	class FastElement
 	{
 	public:
-		FastElement(std::string hash, FastElementType type);
+		FastElement(FastElementType type);
 		~FastElement();
 
-		void CleanUp();
+		virtual void Start();
+		virtual void CleanUp();
 
 		virtual void Draw() = 0;
 
@@ -901,17 +677,18 @@ namespace FastInternal
 		bool            interactable = false;
 	};
 
-	class FastWindow : public FastElement
+	class FastElements : public FastModule
 	{
 	public:
-		FastWindow(std::string hash);
-		~FastWindow();
+		FastElements();
+		virtual ~FastElements();
 
-		std::string title;
-		FastColour  bg_colour;
-
-		void Draw();
+		void Start();
+		void CleanUp();
 	};
+
+
+	// -----------------------------------------------------------------------------------------------------
 }
 
 #endif // !FASTUI
