@@ -77,65 +77,94 @@ void FastImpl::Render()
 	glPushMatrix();
 	glLoadIdentity();
 
-	std::vector<FastInternal::FastWindow*> windows = FastInternal::GetWindows();
+	//std::vector<FastInternal::FastWindow*> windows = FastInternal::GetWindows();
 
-	for (std::vector<FastInternal::FastWindow*>::iterator it = windows.begin(); it != windows.end(); ++it)
+	//for (std::vector<FastInternal::FastWindow*>::iterator it = windows.begin(); it != windows.end(); ++it)
+	//{
+	//	FastInternal::FastWindow* curr_window = (*it);
+
+	//	curr_window->Update();
+
+	//	std::vector<FastInternal::FastDrawShape> shapes = curr_window->GetShapes();
+
+	//	for (std::vector<FastInternal::FastDrawShape>::iterator sh = shapes.begin(); sh != shapes.end(); ++sh)
+	//	{
+	//		FastInternal::FastDrawShape curr_shape = (*sh);
+
+	//		RenderShape(curr_shape);
+	//	}
+
+	//	std::vector<FastInternal::FastElement*> elements = curr_window->GetElements();
+
+	//	for (std::vector<FastInternal::FastElement*>::iterator el = elements.begin(); el != elements.end(); ++el)
+	//	{
+	//		FastInternal::FastElement* curr_element = (*el);
+
+	//		curr_element->Update();
+
+	//		std::vector<FastInternal::FastDrawShape> el_shapes = curr_element->GetShapes();
+
+	//		for (std::vector<FastInternal::FastDrawShape>::iterator sh = el_shapes.begin(); sh != el_shapes.end(); ++sh)
+	//		{
+	//			FastInternal::FastDrawShape curr_shape = (*sh);
+
+	//			RenderShape(curr_shape);
+	//		}
+	//	}
+	//}
+
+	FastVector<FastInternal::FastWindow*> windows = FastInternal::GetWindows();
+
+	int iterations_count = 0;
+
+	for (int w = 0; w < windows.Size(); ++w)
 	{
-		FastInternal::FastWindow* curr_window = (*it);
+		FastInternal::FastWindow* curr_window = windows[w];
 
 		curr_window->Update();
 
-		std::vector<FastInternal::FastDrawShape> shapes = curr_window->GetShapes();
+		FastVector<FastInternal::FastDrawShape> shapes = curr_window->GetShapes();
 
-		for (std::vector<FastInternal::FastDrawShape>::iterator sh = shapes.begin(); sh != shapes.end(); ++sh)
+		for (int sh = 0; sh < shapes.Size(); ++sh)
 		{
-			FastInternal::FastDrawShape curr_shape = (*sh);
+			FastInternal::FastDrawShape curr_shape = shapes[sh];
 
 			RenderShape(curr_shape);
+
+			++iterations_count;
 		}
 
-		std::vector<FastInternal::FastElement*> elements = curr_window->GetElements();
+		FastVector<FastInternal::FastElement*> elements = curr_window->GetElements();
 
-		for (std::vector<FastInternal::FastElement*>::iterator el = elements.begin(); el != elements.end(); ++el)
+		for (int el = 0; el < elements.Size(); ++el)
 		{
-			FastInternal::FastElement* curr_element = (*el);
+			FastInternal::FastElement* curr_element = elements[el];
 
 			curr_element->Update();
 
-			std::vector<FastInternal::FastDrawShape> el_shapes = curr_element->GetShapes();
+			FastVector<FastInternal::FastDrawShape> el_shapes = curr_element->GetShapes();
 
-			for (std::vector<FastInternal::FastDrawShape>::iterator sh = el_shapes.begin(); sh != el_shapes.end(); ++sh)
+			for (int sh = 0; sh < el_shapes.Size(); ++sh)
 			{
-				FastInternal::FastDrawShape curr_shape = (*sh);
+				FastInternal::FastDrawShape curr_shape = el_shapes[sh];
 
 				RenderShape(curr_shape);
+
+				++iterations_count;
 			}
+
+			++iterations_count;
 		}
+
+		++iterations_count;
 	}
 
-	//for (int i = 0; i < shapes.size(); ++i)
-	//{
-	//	FastInternal::FastDrawShape curr_shape = shapes[i];
+	std::vector<FastInternal::FastDrawShape> debug_shapes = FastInternal::GetDebugShapes();
 
-	//	glVertexPointer(curr_shape.VerticesSize(), GL_FLOAT, sizeof(float) * curr_shape.VerticesSize(), curr_shape.GetVerticesPtr());
-
-	//	glTexCoordPointer(curr_shape.UvsSize(), GL_FLOAT, sizeof(float) * curr_shape.UvsSize(), curr_shape.GetUvsPtr());
-
-	//	if(curr_shape.GetTextureId() > 0)
-	//		glBindTexture(GL_TEXTURE_2D, curr_shape.GetTextureId());
-
-	//	glColorPointer(curr_shape.ColoursSize(), GL_FLOAT, sizeof(float) * curr_shape.ColoursSize(), curr_shape.GetColoursPtr());
-
-	//	if (curr_shape.GetUsesClippingRect())
-	//	{
-	//		FastRect clipping = curr_shape.GetClippingRect();
-	//		glScissor(clipping.x, viewport.y - clipping.yh(), clipping.w, viewport.y - clipping.y);
-	//	}
-
-	//	glDrawElements(GL_TRIANGLES, curr_shape.GetIndicesCount(), GL_UNSIGNED_INT, curr_shape.GetIndicesPtr());
-
-	//	glBindTexture(GL_TEXTURE_2D, 0);
-	//}
+	for (std::vector<FastInternal::FastDrawShape>::iterator it = debug_shapes.begin(); it != debug_shapes.end(); ++it)
+	{
+		RenderShape(*it);
+	}
 
 	glDisableClientState(GL_COLOR_ARRAY);
 	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
@@ -202,9 +231,12 @@ void FastInternal::RenderShape(FastInternal::FastDrawShape curr_shape)
 
 	if (curr_shape.GetUsesClippingRect())
 	{
+		// Check, has bugs
 		FastRect clipping = curr_shape.GetClippingRect();
 		glScissor(clipping.x, viewport.y - clipping.yh(), clipping.w, viewport.y - clipping.y);
 	}
+	else
+		glScissor(0, 0, viewport.x, viewport.y);
 
 	glDrawElements(GL_TRIANGLES, curr_shape.GetIndicesCount(), GL_UNSIGNED_INT, curr_shape.GetIndicesPtr());
 

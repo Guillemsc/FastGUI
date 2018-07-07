@@ -212,6 +212,104 @@ private:
 	int size = 0;
 };
 
+template<class TYPE>
+class FastVector
+{
+public:
+	FastVector() { };
+	FastVector(const FastVector& element) { Substitute(element); };
+	~FastVector() { Clear(); };
+
+	TYPE operator[] (Fuint index) { FAST_ASSERT(index < data_capacity, "Index out of boundaries"); return data_array[index]; };
+	void operator = (const FastVector & element) { Substitute(element); };
+	void operator += (const FastVector& element) { Concatenate(element); };
+
+	inline void PushBack(TYPE element)
+	{
+		if (data_capacity < data_used + 1)
+			Resize(data_capacity + chunk_size);
+
+		data_array[data_used++] = element;
+	};
+
+	inline void RemoveAt(int index)
+	{
+		FAST_ASSERT(index < data_capacity, "Index out of boundaries");
+
+		for (int i = index; i < data_used - 1; ++i)
+			data_array[i] = data_array[i + 1];
+
+		if (data_used > 0)
+			--data_used;
+
+		if (data_capacity > data_used + chunk_size)
+			Resize(data_capacity - chunk_size);
+	};
+
+	inline void Clear() { FAST_DEL_ARRAY(data_array); data_capacity = 0; data_used = 0; };
+	inline int Size() { return data_used; };
+	inline TYPE* Data() { return data_array; };
+
+private:
+	void Resize(Fuint size)
+	{
+		if (size > 0 && size > data_used)
+		{
+			if (data_capacity > 0)
+			{
+				TYPE* new_data = nullptr;
+				new_data = new TYPE[size];
+
+				for (int i = 0; i < data_used; ++i)
+					new_data[i] = data_array[i];
+
+				data_capacity = size;
+
+				FAST_DEL_ARRAY(data_array);
+
+				data_array = new_data;
+			}
+			else
+			{
+				data_array = new TYPE[size];
+				data_capacity = size;
+			}
+		}
+	};
+
+	void Substitute(const FastVector& element)
+	{
+		Clear();
+		Resize(element.data_used + chunk_size);
+
+		for (int i = 0; i < element.data_used; ++i)
+			data_array[i] = element.data_array[i];
+
+		data_used = element.data_used;
+	};
+
+	void Concatenate(const FastVector& element)
+	{
+		int new_size = data_used + element.data_used;
+
+		if (new_size > data_capacity)
+			Resize(new_size);
+
+		for (int i = 0; i < element.data_used; ++i)
+			data_array[i] = element.data_array[i];
+
+		data_used = new_size;
+	};
+
+private:
+	TYPE *    data_array = nullptr;
+	Fuint     data_capacity = 0;
+
+	Fuint     data_used = 0;
+
+	const int chunk_size = 1;
+};
+
 // ---------------------------------------------------------------------------------------------------------
 
 namespace FastInternal
@@ -258,7 +356,10 @@ namespace FastInternal
 	void SetKeyMapping(FastInternal::FastKeyMapping fast_key, Fuint maping_index);
 
 	// Elements
-	std::vector<FastWindow*> GetWindows();
+	FastVector<FastWindow*> GetWindows();
+
+	// Debug
+	std::vector<FastDrawShape> GetDebugShapes();
 
 	// -----------------------------------------------------------------------------------------------------
 
@@ -399,6 +500,10 @@ namespace FastInternal
 		float win_title_bar_height;
 		float win_x_padding;
 		float win_y_padding;
+		float widget_height;
+		float widget_x_padding;
+		float widget_y_padding;
+		float widgets_y_separation;
 	};
 
 	struct FastStyleColours
@@ -406,6 +511,7 @@ namespace FastInternal
 		FastColour win_bg;
 		FastColour win_title_bar;
 		FastColour text;
+		FastColour widget_bg;
 	};
 
 	struct FastStyleElements
@@ -587,8 +693,12 @@ namespace FastInternal
 		void Start();
 		void CleanUp();
 
+		void DrawDebug();
+		std::vector<FastDrawShape>& GetDebugShapes();
+
 		// Shape management
 		void StartShape();
+		void ContinueShape(const FastDrawShape& shape);
 		FastDrawShape FinishShape();
 
 		// Clipping
@@ -614,6 +724,8 @@ namespace FastInternal
 		void BezierQuad(FastVec2 pos, FastVec2 size, FastVec2 p1, FastVec2 p2); // Not working
 
 	private:
+		std::vector<FastDrawShape> debug_shapes;
+
 		bool	      drawing_shape = false;
 		FastDrawShape curr_shape;
 
@@ -636,15 +748,16 @@ namespace FastInternal
 	class FastElement
 	{
 	public:
-		FastElement(FastElementType type);
+		FastElement(const FastElementType& type, const FastStyleElements& default_style, FastWindow* window);
 		~FastElement();
 
 		virtual void Start() = 0;
 		virtual void Update() = 0;
 		virtual void CleanUp() = 0;
-		void RecalucalteRect();
 
-		std::vector<FastDrawShape>& GetShapes();
+		virtual FastVec2 RecalucalteRect(const FastVec2& starting_pos) = 0;
+
+		FastVector<FastDrawShape>& GetShapes();
 
 		void SetStyle(const FastStyleElements& style);
 		
@@ -655,16 +768,40 @@ namespace FastInternal
 	protected:
 		FastElementType type;
 		FastStyleElements style;
+		FastWindow* window = nullptr;
 
-		std::vector<FastDrawShape> draw_shapes;
+		FastVector<FastDrawShape> draw_shapes;
 		bool     needs_redraw = false;
 
 		FastRect rect;
 		FastRect last_rect;
 	};
 
+	class FastElementText : public FastElement
+	{
+		friend FastWindow;
+
+	public:
+		FastElementText(const FastStyleElements& default_style, FastWindow* window);
+		~FastElementText();
+
+		void Start();
+		void Update();
+		void CleanUp();
+
+		void SetText(std::string txt);
+
+	private:
+		FastVec2 RecalucalteRect(const FastVec2& starting_pos);
+		void DoRedraw();
+
+	private:
+		std::string text;
+	};
+
 	class FastWindow 
 	{
+		friend FastElementText;
 	public:
 		FastWindow(const FastStyleElements& default_style);
 		~FastWindow();
@@ -673,13 +810,16 @@ namespace FastInternal
 		void Update();
 		void CleanUp();
 		
-		std::vector<FastDrawShape>& GetShapes();
-		std::vector<FastElement*>& GetElements();
+		FastElement* AddElement(const FastElementType& type);
+
+		FastVector<FastDrawShape>& GetShapes();
+		FastVector<FastElement*>& GetElements();
 
 		void SetStyle(const FastStyleElements& style);
 		void SetTitle(std::string title);
 		void SetUseTitle(bool set);
 		void SetPos(const FastVec2& pos);
+		void SetAnchor(const FastVec2& anchor);
 		void SetSize(const FastVec2& size);
 
 	private:
@@ -687,14 +827,15 @@ namespace FastInternal
 		void Redraw();
 		void DoRedraw();
 		void RecalucalteRect();
+		void RecalculateElementsRect();
 
 	private:
 		FastStyleElements style;
 
-		std::vector<FastDrawShape> draw_shapes;
+		FastVector<FastDrawShape> draw_shapes;
 		bool     needs_redraw = false;
 
-		std::vector<FastElement*> elements;
+		FastVector<FastElement*> elements;
 
 		FastRect rect;
 		FastRect last_rect;
@@ -719,12 +860,12 @@ namespace FastInternal
 		void Start();
 		void CleanUp();
 
-		std::vector<FastWindow*>& GetWindows();
+		FastVector<FastWindow*>& GetWindows();
 
 		FastWindow* CreateWin();
 
 	private:
-		std::vector<FastWindow*> windows;
+		FastVector<FastWindow*> windows;
 	};
 
 
@@ -737,6 +878,7 @@ namespace Fast
 	// User exposed functions ------------------------------------------------------------------------------
 
 	const char* GetVersion();
+	Fuint FPS();
 
 	void LoadFont(const char* filepath);
 

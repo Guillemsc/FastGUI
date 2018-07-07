@@ -476,11 +476,23 @@ const char * Fast::GetVersion()
 	return FASTGUI_VERSION;
 }
 
+Fuint Fast::FPS()
+{
+	Fuint ret = 0.0f;
+
+	if (FastInternal::CheckInited())
+	{
+		ret = fast_main->io->GetFps();
+	}
+
+	return ret;
+}
+
 void Fast::LoadFont(const char * filepath)
 {
 	if (FastInternal::CheckInited())
 	{
-		fast_main->fonts->LoadFont(filepath, 30, FastInternal::FastFontRange::FAST_FONT_RANGE_LATIN);
+		fast_main->fonts->LoadFont(filepath, 35, FastInternal::FastFontRange::FAST_FONT_RANGE_LATIN);
 	}
 }
 
@@ -527,23 +539,7 @@ void FastInternal::NewFrame(FastVec2 window_size, FastVec2 mouse_pos, float delt
 
 		// Debug ---------------------------------------------------------
 
-		//fast_main->draw->CircleQuarter(FastVec2(200, 200), 50, 0, 1, FastColour(1, 1, 1));
-
-		//fast_main->draw->RoundedQuad(FastVec2(230, 50), FastVec2(300, 200), 0, FastColour(1, 1, 1));
-		//fast_main->draw->TopRoundedQuad(FastVec2(230, 50), FastVec2(300, 200), 10, FastColour(1, 1, 1));
-
-		//fast_main->draw->BezierQuad(FastVec2(200, 200), FastVec2(10, 10), FastVec2(0.8f, 0.0f), FastVec2(0.8f, 0.0f));
-
-		//fast_main->draw->Circle(FastVec2(400, 200), 10, FastColour(0.2, 0.2, 0.2));
-
-		////fast_main->draw->StartShape();
-		////fast_main->draw->FontAtlas(FastVec2(0, 0), FastVec2(1280, 720), fast_main->fonts->GetCurrFont(), FastColour(1, 1, 1, 1));
-		////fast_main->draw->FinishShape();
-		fast_main->draw->StartShape();
-		std::string frames = std::to_string(fast_main->io->GetFps());
-		fast_main->draw->Text(FastVec2(2, 2), 20, fast_main->fonts->GetCurrFont(), frames, FastColour(1, 1, 1, 1));
-		fast_main->draw->FinishShape();
-		//fast_main->draw->RightTraingle(FastVec2(500, 500), 50, FastColour(1, 1, 1, 1));
+		fast_main->draw->DrawDebug();
 	}
 }
 
@@ -572,13 +568,25 @@ void FastInternal::SetKeyMapping(FastInternal::FastKeyMapping fast_key, Fuint ma
 	}
 }
 
-std::vector<FastInternal::FastWindow*> FastInternal::GetWindows()
+FastVector<FastInternal::FastWindow*> FastInternal::GetWindows()
 {
-	std::vector<FastInternal::FastWindow*> ret;
+	FastVector<FastInternal::FastWindow*> ret;
 
 	if (FastInternal::CheckInited())
 	{
 		ret = fast_main->elements->GetWindows();
+	}
+
+	return ret;
+}
+
+std::vector<FastInternal::FastDrawShape> FastInternal::GetDebugShapes()
+{
+	std::vector<FastInternal::FastDrawShape> ret;
+
+	if (FastInternal::CheckInited())
+	{
+		ret = fast_main->draw->GetDebugShapes();
 	}
 
 	return ret;
@@ -737,10 +745,15 @@ void FastInternal::FastStyle::SetDefaultStyle()
 	def.physical.win_title_bar_height = 30;
 	def.physical.win_x_padding = 6;
 	def.physical.win_y_padding = 3;
+	def.physical.widget_height = 40;
+	def.physical.widget_x_padding = 6;
+	def.physical.widget_y_padding = 3;
+	def.physical.widgets_y_separation = 2;
 
 	def.colours.win_bg = FastColour(0.2f, 0.2f, 0.2f);
-	def.colours.win_title_bar = FastColour(0.5f, 0.0f, 0.0f);
+	def.colours.win_title_bar = FastColour(0.35f, 0.07f, 0.07f);
 	def.colours.text = FastColour(1, 1, 1);
+	def.colours.widget_bg = FastColour(0.07f, 0.4f, 0.3f);
 }
 
 FastInternal::FastFonts::FastFonts()
@@ -1092,9 +1105,35 @@ void FastInternal::FastDraw::CleanUp()
 
 }
 
+void FastInternal::FastDraw::DrawDebug()
+{
+	debug_shapes.clear();
+
+	fast_main->draw->StartShape();
+	fast_main->draw->Quad(FastVec2(0, 0), FastVec2(35, 23), FastColour(0.1f, 0.1f, 0.1f));
+	debug_shapes.push_back(fast_main->draw->FinishShape());
+
+	fast_main->draw->StartShape();
+	std::string frames = std::to_string(fast_main->io->GetFps());
+	fast_main->draw->Text(FastVec2(2, 2), 20, fast_main->fonts->GetCurrFont(), frames, FastColour(1, 1, 1, 1));
+	debug_shapes.push_back(fast_main->draw->FinishShape());
+}
+
+std::vector<FastInternal::FastDrawShape>& FastInternal::FastDraw::GetDebugShapes()
+{
+	return debug_shapes;
+}
+
 void FastInternal::FastDraw::StartShape()
 {
 	curr_shape = FastInternal::FastDrawShape();
+
+	drawing_shape = true;
+}
+
+void FastInternal::FastDraw::ContinueShape(const FastDrawShape & shape)
+{
+	curr_shape = shape;
 
 	drawing_shape = true;
 }
@@ -1714,7 +1753,7 @@ void FastInternal::FastElements::CleanUp()
 {
 }
 
-std::vector<FastInternal::FastWindow*>& FastInternal::FastElements::GetWindows()
+FastVector<FastInternal::FastWindow*>& FastInternal::FastElements::GetWindows()
 {
 	return windows;
 }
@@ -1726,13 +1765,15 @@ FastInternal::FastWindow * FastInternal::FastElements::CreateWin()
 	ret = new FastWindow(fast_main->style->def);
 	ret->Start();
 
-	windows.push_back(ret);
+	windows.PushBack(ret);
 
 	return ret;
 }
 
-FastInternal::FastElement::FastElement(FastElementType type)
+FastInternal::FastElement::FastElement(const FastElementType& type, const FastStyleElements& default_style, FastWindow* _window)
 {
+	window = _window;
+	style = default_style;
 }
 
 FastInternal::FastElement::~FastElement()
@@ -1747,7 +1788,7 @@ void FastInternal::FastElement::CleanUp()
 {
 }
 
-std::vector<FastInternal::FastDrawShape>& FastInternal::FastElement::GetShapes()
+FastVector<FastInternal::FastDrawShape>& FastInternal::FastElement::GetShapes()
 {
 	return draw_shapes;
 }
@@ -1762,14 +1803,6 @@ void FastInternal::FastElement::SetStyle(const FastStyleElements & _style)
 void FastInternal::FastElement::Redraw()
 {
 	needs_redraw = true;
-}
-
-void FastInternal::FastElement::RecalucalteRect()
-{
-	if (rect.x != last_rect.x || rect.y != last_rect.y || rect.w != last_rect.w || rect.h != last_rect.h)
-		Redraw();
-
-	last_rect = rect;
 }
 
 FastInternal::FastWindow::FastWindow(const FastStyleElements& _default_style)
@@ -1798,17 +1831,40 @@ void FastInternal::FastWindow::CleanUp()
 {
 }
 
+FastInternal::FastElement * FastInternal::FastWindow::AddElement(const FastElementType & type)
+{
+	FastInternal::FastElement* ret = nullptr;
+
+	switch (type)
+	{
+	case FastElementType::FAST_TEXT:
+		ret = new FastElementText(fast_main->style->def, this);
+		break;
+	}
+
+	if (ret != nullptr)
+	{
+		ret->Start();
+		elements.PushBack(ret);
+
+		RecalucalteRect();
+		RecalculateElementsRect();
+	}
+
+	return ret;
+}
+
 void FastInternal::FastWindow::Redraw()
 {
 	needs_redraw = true;
 }
 
-std::vector<FastInternal::FastDrawShape>& FastInternal::FastWindow::GetShapes()
+FastVector<FastInternal::FastDrawShape>& FastInternal::FastWindow::GetShapes()
 {
 	return draw_shapes;
 }
 
-std::vector<FastInternal::FastElement*>& FastInternal::FastWindow::GetElements()
+FastVector<FastInternal::FastElement*>& FastInternal::FastWindow::GetElements()
 {
 	return elements;
 }
@@ -1840,6 +1896,20 @@ void FastInternal::FastWindow::SetPos(const FastVec2 & pos)
 	local_pos.y = pos.y;
 }
 
+void FastInternal::FastWindow::SetAnchor(const FastVec2& _anchor)
+{
+	anchor = _anchor;
+
+	if (anchor.x > 1)
+		anchor.x = 1;
+	if (anchor.y > 1)
+		anchor.y = 1;
+	if (anchor.x < 0)
+		anchor.x = 0;
+	if (anchor.y < 0)
+		anchor.y = 0;
+}
+
 void FastInternal::FastWindow::SetSize(const FastVec2 & size)
 {
 	rect.w = size.x;
@@ -1860,20 +1930,43 @@ FastRect FastInternal::FastWindow::GetWindowDrawingRect()
 
 void FastInternal::FastWindow::RecalucalteRect()
 {
-	rect.x = (fast_main->io->GetViewportSize().x * anchor.x) + local_pos.x;
-	rect.y = (fast_main->io->GetViewportSize().y * anchor.x) + local_pos.y;
+	FastVec2 viewport = fast_main->io->GetViewportSize();
 
-	if(rect.x != last_rect.x || rect.y != last_rect.y || rect.w != last_rect.w || rect.h != last_rect.h)
+	rect.x = (viewport.x * anchor.x) + local_pos.x;
+	rect.y = (viewport.y * anchor.y) + local_pos.y;
+
+	if (rect.x != last_rect.x || rect.y != last_rect.y || rect.w != last_rect.w || rect.h != last_rect.h)
+	{
+		RecalculateElementsRect();
+
 		Redraw();
+	}
 
 	last_rect = rect;
+}
+
+void FastInternal::FastWindow::RecalculateElementsRect()
+{
+	FastVec2 acumulated_height = GetWindowDrawingRect().Pos();
+
+	//for (std::vector<FastElement*>::iterator it = elements.begin(); it != elements.end(); ++it)
+	//{
+	//	acumulated_height.y += (*it)->RecalucalteRect(acumulated_height).y;
+	//	acumulated_height.y += style.physical.widgets_y_separation;
+	//}
+
+	for (int i = 0; i < elements.Size(); ++i)
+	{
+		acumulated_height.y += elements[i]->RecalucalteRect(acumulated_height).y;
+		acumulated_height.y += style.physical.widgets_y_separation;
+	}
 }
 
 void FastInternal::FastWindow::DoRedraw()
 {
 	if (needs_redraw)
 	{
-		draw_shapes.clear();
+		draw_shapes.Clear();
 
 		fast_main->draw->SetClipping(rect);
 
@@ -1888,15 +1981,16 @@ void FastInternal::FastWindow::DoRedraw()
 		FastColour bg_colour = style.colours.win_bg;
 		bg_colour.a = style.alpha;
 		fast_main->draw->Quad(drawing_rect.Pos(), drawing_rect.Size(), bg_colour);
-		draw_shapes.push_back(fast_main->draw->FinishShape());
+
+		if(!uses_title_text)
+			draw_shapes.PushBack(fast_main->draw->FinishShape());
 
 		if (uses_title_text)
 		{
-			fast_main->draw->StartShape();
 			FastColour title_bar_colour = style.colours.win_title_bar;
 			title_bar_colour.a = style.alpha;
 			fast_main->draw->Quad(pos, FastVec2(size.x, bar_height), title_bar_colour);
-			draw_shapes.push_back(fast_main->draw->FinishShape());
+			draw_shapes.PushBack(fast_main->draw->FinishShape());
 
 			fast_main->draw->StartShape();
 			FastColour title_text_colour = style.colours.text;
@@ -1904,8 +1998,88 @@ void FastInternal::FastWindow::DoRedraw()
 			float text_height = bar_height - (y_padding * 2);
 			fast_main->draw->Text(FastVec2(pos.x + x_padding, pos.y + y_padding),
 				text_height, fast_main->fonts->GetCurrFont(), title_text, title_text_colour);
-			draw_shapes.push_back(fast_main->draw->FinishShape());
+			draw_shapes.PushBack(fast_main->draw->FinishShape());
 		}
+
+		fast_main->draw->DisableClipping();
+		
+		needs_redraw = false;
+	}
+}
+
+FastInternal::FastElementText::FastElementText(const FastStyleElements& default_style, FastWindow * window) 
+	: FastElement(FastElementType::FAST_TEXT, default_style, window)
+{
+}
+
+FastInternal::FastElementText::~FastElementText()
+{
+}
+
+void FastInternal::FastElementText::Start()
+{
+	SetText("Text Widget");
+}
+
+void FastInternal::FastElementText::Update()
+{
+	DoRedraw();
+}
+
+void FastInternal::FastElementText::CleanUp()
+{
+}
+
+void FastInternal::FastElementText::SetText(std::string txt)
+{
+	if (text != txt)
+	{
+		text = txt;
+		DoRedraw();
+	}
+}
+
+FastVec2 FastInternal::FastElementText::RecalucalteRect(const FastVec2 & starting_pos)
+{
+	rect.x = starting_pos.x;
+	rect.y = starting_pos.y;
+	rect.w = window->rect.w;
+	rect.h = style.physical.widget_height;
+
+	if (rect.x != last_rect.x || rect.y != last_rect.y || rect.w != last_rect.w || rect.h != last_rect.h)
+		Redraw();
+
+	last_rect = rect;
+
+	return rect.Size();
+}
+
+void FastInternal::FastElementText::DoRedraw()
+{
+	if (needs_redraw)
+	{
+		draw_shapes.Clear();
+
+		fast_main->draw->SetClipping(rect);
+
+		FastVec2 pos = rect.Pos();
+		FastVec2 size = rect.Size();
+		float x_padding = style.physical.widget_x_padding;
+		float y_padding = style.physical.widget_y_padding;
+
+		fast_main->draw->StartShape();
+		FastColour bg_colour = style.colours.widget_bg;
+		bg_colour.a = style.alpha;
+		fast_main->draw->Quad(pos, size, bg_colour);
+		draw_shapes.PushBack(fast_main->draw->FinishShape());
+
+		fast_main->draw->StartShape();
+		FastColour title_text_colour = style.colours.text;
+		title_text_colour.a = style.alpha;
+		float text_height = size.y - (y_padding * 2);
+		fast_main->draw->Text(FastVec2(pos.x + x_padding, pos.y + y_padding),
+			text_height, fast_main->fonts->GetCurrFont(), text, title_text_colour);
+		draw_shapes.PushBack(fast_main->draw->FinishShape());
 
 		fast_main->draw->DisableClipping();
 
