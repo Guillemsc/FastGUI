@@ -256,7 +256,7 @@ bool FastRect::Contains(FastRect rec)
 
 bool FastRect::Contains(FastVec2 point)
 {
-	if (point.x > x && point.x < xw() && point.y > y && point.y < yh())
+	if (point.x >= x && point.x <= xw() && point.y >= y && point.y <= yh())
 		return true;
 	return false;
 }
@@ -534,6 +534,8 @@ void FastInternal::NewFrame(FastVec2 window_size, FastVec2 mouse_pos, float delt
 {
 	if (FastInternal::CheckInited())
 	{
+		fast_main->StartFrame();
+
 		fast_main->io->AddNewFrame(delta_time);
 
 		fast_main->io->SetViewportSize(window_size);
@@ -614,6 +616,12 @@ void FastInternal::FastMain::Start()
 		(*it)->Start();
 }
 
+void FastInternal::FastMain::StartFrame()
+{
+	for (std::vector<FastModule*>::iterator it = modules.begin(); it != modules.end(); ++it)
+		(*it)->StartFrame();
+}
+
 void FastInternal::FastMain::CleanUp()
 {
 	for (std::vector<FastModule*>::iterator it = modules.begin(); it != modules.end(); ++it)
@@ -673,6 +681,11 @@ bool FastInternal::FastIO::GetKeyDown(const FastKeyMapping & key) const
 void FastInternal::FastIO::SetMousePos(const FastVec2 & set)
 {
 	mouse_pos = set;
+}
+
+FastVec2 FastInternal::FastIO::GetMousePos()
+{
+	return mouse_pos;
 }
 
 void FastInternal::FastIO::AddKeyMaping(FastKeyMapping key, Fuint maped_key)
@@ -1859,6 +1872,34 @@ void FastInternal::FastElements::CleanUp()
 {
 }
 
+void FastInternal::FastElements::StartFrame()
+{
+	if (hovered_window != nullptr)
+	{
+		hovered_window->SetHovered(true);
+	}
+
+	if (last_hovered_window != hovered_window && last_hovered_window != nullptr)
+	{
+		last_hovered_window->SetHovered(false);
+	}
+
+	if (hovered_element != nullptr)
+	{
+		hovered_element->SetHovered(true);
+	}
+
+	if (last_hovered_element != hovered_element && last_hovered_element != nullptr)
+	{
+		last_hovered_element->SetHovered(false);
+	}
+
+	last_hovered_window = hovered_window;
+	last_hovered_element = hovered_element;
+	hovered_window = nullptr;
+	hovered_element = nullptr;
+}
+
 FastVector<FastInternal::FastWindow*>& FastInternal::FastElements::GetWindows()
 {
 	return windows;
@@ -1886,6 +1927,11 @@ FastInternal::FastElement::~FastElement()
 {
 }
 
+void FastInternal::FastElement::BaseUpdate()
+{
+	CheckMouseInput();
+}
+
 void FastInternal::FastElement::Start()
 {
 }
@@ -1911,6 +1957,21 @@ void FastInternal::FastElement::Redraw()
 	needs_redraw = true;
 }
 
+void FastInternal::FastElement::CheckMouseInput()
+{
+	if (rect.Contains(fast_main->io->GetMousePos()))
+		fast_main->elements->hovered_element = this;
+}
+
+void FastInternal::FastElement::SetHovered(bool set)
+{
+	if (hovered != set)
+	{
+		hovered = set;
+		Redraw();
+	}
+}
+
 FastInternal::FastWindow::FastWindow(const FastStyleElements& _default_style)
 {
 	style = _default_style; 
@@ -1931,6 +1992,7 @@ void FastInternal::FastWindow::Update()
 {
 	RecalucalteRect();
 	DoRedraw();
+	CheckMouseInput();
 }
 
 void FastInternal::FastWindow::CleanUp()
@@ -2068,6 +2130,21 @@ void FastInternal::FastWindow::RecalculateElementsRect()
 	}
 }
 
+void FastInternal::FastWindow::CheckMouseInput()
+{
+	if (rect.Contains(fast_main->io->GetMousePos()))
+		fast_main->elements->hovered_window = this;
+}
+
+void FastInternal::FastWindow::SetHovered(bool set)
+{
+	if (hovered != set)
+	{
+		hovered = set;
+		Redraw();
+	}
+}
+
 void FastInternal::FastWindow::DoRedraw()
 {
 	if (needs_redraw)
@@ -2176,6 +2253,8 @@ void FastInternal::FastElementText::DoRedraw()
 
 		fast_main->draw->StartShape();
 		FastColour bg_colour = style.colours.widget_bg;
+		if (hovered)
+			bg_colour = FastColour(0.9, 0.9, 0.9);
 		bg_colour.a = style.alpha;
 		fast_main->draw->Quad(pos, size, bg_colour);
 		draw_shapes.PushBack(fast_main->draw->FinishShape());

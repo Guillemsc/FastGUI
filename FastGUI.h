@@ -374,6 +374,7 @@ namespace FastInternal
 	public:
 		virtual void Start() = 0;
 		virtual void CleanUp() = 0;
+		virtual void StartFrame() {};
 	};
 
 	class FastMain
@@ -383,6 +384,7 @@ namespace FastInternal
 		~FastMain();
 
 		void Start();
+		void StartFrame();
 		void CleanUp();
 
 		std::function<int(Fuchar* data, FastVec2 size)> load_texture;
@@ -458,6 +460,7 @@ namespace FastInternal
 		bool GetKeyDown(const FastKeyMapping& key) const;
 
 		void SetMousePos(const FastVec2& set);
+		FastVec2 GetMousePos();
 
 		void AddKeyMaping(FastKeyMapping key, Fuint maped_key);
 
@@ -761,9 +764,13 @@ namespace FastInternal
 
 	class FastElement
 	{
+		friend FastElements;
+
 	public:
 		FastElement(const FastElementType& type, const FastStyleElements& default_style, FastWindow* window);
 		~FastElement();
+
+		void BaseUpdate();
 
 		virtual void Start() = 0;
 		virtual void Update() = 0;
@@ -778,6 +785,9 @@ namespace FastInternal
 	protected:
 		void Redraw();
 		virtual void DoRedraw() = 0;
+		void CheckMouseInput();
+
+		void SetHovered(bool set);
 
 	protected:
 		FastElementType type;
@@ -789,6 +799,8 @@ namespace FastInternal
 
 		FastRect rect;
 		FastRect last_rect;
+
+		bool     hovered = false;
 	};
 
 	class FastElementText : public FastElement
@@ -816,6 +828,7 @@ namespace FastInternal
 	class FastWindow 
 	{
 		friend FastElementText;
+		friend FastElements;
 	public:
 		FastWindow(const FastStyleElements& default_style);
 		~FastWindow();
@@ -842,6 +855,9 @@ namespace FastInternal
 		void DoRedraw();
 		void RecalucalteRect();
 		void RecalculateElementsRect();
+		void CheckMouseInput();
+
+		void SetHovered(bool set);
 
 	private:
 		FastStyleElements style;
@@ -863,23 +879,40 @@ namespace FastInternal
 
 		std::string title_text;
 		bool	 uses_title_text = true;
+
+		bool	 hovered = false;
 	};
 
 	class FastElements : public FastModule
 	{
+		friend FastWindow;
+		friend FastElement;
+
 	public:
 		FastElements();
 		virtual ~FastElements();
 
 		void Start();
 		void CleanUp();
+		void StartFrame();
 
 		FastVector<FastWindow*>& GetWindows();
 
 		FastWindow* CreateWin();
 
 	private:
+
+	private:
 		FastVector<FastWindow*> windows;
+
+		// Windows input control
+		FastWindow* hovered_window = nullptr;
+		FastWindow* last_hovered_window = nullptr;
+
+		FastElement* hovered_element = nullptr;
+		FastElement* last_hovered_element = nullptr;
+
+		FastWindow* focused_window = nullptr;
 	};
 
 

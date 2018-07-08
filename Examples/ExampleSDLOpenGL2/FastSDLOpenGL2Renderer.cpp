@@ -140,6 +140,7 @@ void FastImpl::Render()
 		{
 			FastInternal::FastElement* curr_element = elements[el];
 
+			curr_element->BaseUpdate();
 			curr_element->Update();
 
 			FastVector<FastInternal::FastDrawShape> el_shapes = curr_element->GetShapes();
