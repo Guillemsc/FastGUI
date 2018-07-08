@@ -512,6 +512,7 @@ namespace FastInternal
 		float win_title_bar_height;
 		float win_x_padding;
 		float win_y_padding;
+		float win_resizable_margin;
 		float widget_height;
 		float widget_x_padding;
 		float widget_y_padding;
@@ -920,6 +921,7 @@ namespace FastInternal
 		bool     interactable = true;
 		bool	 visible = true;
 		bool     draggable = false;
+		bool     resizable = true;
 
 		std::string title_text;
 		bool	 uses_title_text = true;

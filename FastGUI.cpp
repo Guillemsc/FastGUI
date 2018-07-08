@@ -853,6 +853,7 @@ void FastInternal::FastStyle::SetDefaultStyle()
 	def.physical.win_title_bar_height = 30;
 	def.physical.win_x_padding = 6;
 	def.physical.win_y_padding = 3;
+	def.physical.win_resizable_margin = 5;
 	def.physical.widget_height = 40;
 	def.physical.widget_x_padding = 6;
 	def.physical.widget_y_padding = 3;
@@ -2275,6 +2276,9 @@ FastRect FastInternal::FastWindow::GetWindowDrawingRect()
 	{
 		ret.y += style.physical.win_title_bar_height;
 		ret.h -= style.physical.win_title_bar_height;
+
+		if (resizable)
+			ret.h -= style.physical.win_resizable_margin;	
 	}
 	return ret;
 }
@@ -2322,9 +2326,7 @@ void FastInternal::FastWindow::CheckMouseInput()
 		dragging = false;
 
 	if (dragging)
-	{
-		AddPos(fast_main->io->GetMouseMovement());
-	}
+		AddPos(fast_main->io->GetMouseMovement());	
 }
 
 void FastInternal::FastWindow::DoRedraw()
@@ -2347,17 +2349,24 @@ void FastInternal::FastWindow::DoRedraw()
 		bg_colour.a = style.alpha;
 		fast_main->draw->Quad(drawing_rect.Pos(), drawing_rect.Size(), bg_colour);
 
-		if(!uses_title_text)
-			draw_shapes.PushBack(fast_main->draw->FinishShape());
-
 		if (uses_title_text)
 		{
 			FastColour title_bar_colour = style.colours.win_title_bar;
 			title_bar_colour.a = style.alpha;
 			fast_main->draw->Quad(pos, FastVec2(size.x, bar_height), title_bar_colour);
-			draw_shapes.PushBack(fast_main->draw->FinishShape());
-			interactable_rects[0].rect = FastRect(pos, FastVec2(size.x, bar_height));
 
+			interactable_rects[0].rect = FastRect(pos, FastVec2(size.x, bar_height));
+		}
+
+		if (resizable)
+		{
+			
+		}
+
+		draw_shapes.PushBack(fast_main->draw->FinishShape());
+
+		if(uses_title_text)
+		{
 			fast_main->draw->StartShape();
 			FastColour title_text_colour = style.colours.text;
 			title_text_colour.a = style.alpha;
@@ -2410,7 +2419,7 @@ FastVec2 FastInternal::FastElementText::RecalucalteRect(const FastVec2 & startin
 {
 	rect.x = starting_pos.x;
 	rect.y = starting_pos.y;
-	rect.w = window->rect.w;
+	rect.w = window->GetWindowDrawingRect().w;
 	rect.h = style.physical.widget_height;
 
 	if (rect.x != last_rect.x || rect.y != last_rect.y || rect.w != last_rect.w || rect.h != last_rect.h)

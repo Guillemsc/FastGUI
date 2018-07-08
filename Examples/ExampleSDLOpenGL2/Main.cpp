@@ -88,23 +88,23 @@ int main(int argc, char ** argv)
 	win->AddElement(FastInternal::FastElementType::FAST_TEXT);
 
 
-	FastInternal::FastWindow* win2 = Fast::Window();
-	win2->SetTitle("Transformations");
-	win2->SetPos(FastVec2(400, 0));
-	win2->SetSize(FastVec2(400, 600));
-	win2->AddElement(FastInternal::FastElementType::FAST_TEXT);
-	win2->AddElement(FastInternal::FastElementType::FAST_TEXT);
-	win2->AddElement(FastInternal::FastElementType::FAST_TEXT);
-	win2->AddElement(FastInternal::FastElementType::FAST_TEXT);
-	win2->AddElement(FastInternal::FastElementType::FAST_TEXT);
-	win2->AddElement(FastInternal::FastElementType::FAST_TEXT);
-	win2->AddElement(FastInternal::FastElementType::FAST_TEXT);
-	win2->AddElement(FastInternal::FastElementType::FAST_TEXT);
-	win2->AddElement(FastInternal::FastElementType::FAST_TEXT);
-	win2->AddElement(FastInternal::FastElementType::FAST_TEXT);
-	win2->AddElement(FastInternal::FastElementType::FAST_TEXT);
-	win2->AddElement(FastInternal::FastElementType::FAST_TEXT);
-	win2->AddElement(FastInternal::FastElementType::FAST_TEXT);
+	//FastInternal::FastWindow* win2 = Fast::Window();
+	//win2->SetTitle("Transformations");
+	//win2->SetPos(FastVec2(400, 0));
+	//win2->SetSize(FastVec2(400, 600));
+	//win2->AddElement(FastInternal::FastElementType::FAST_TEXT);
+	//win2->AddElement(FastInternal::FastElementType::FAST_TEXT);
+	//win2->AddElement(FastInternal::FastElementType::FAST_TEXT);
+	//win2->AddElement(FastInternal::FastElementType::FAST_TEXT);
+	//win2->AddElement(FastInternal::FastElementType::FAST_TEXT);
+	//win2->AddElement(FastInternal::FastElementType::FAST_TEXT);
+	//win2->AddElement(FastInternal::FastElementType::FAST_TEXT);
+	//win2->AddElement(FastInternal::FastElementType::FAST_TEXT);
+	//win2->AddElement(FastInternal::FastElementType::FAST_TEXT);
+	//win2->AddElement(FastInternal::FastElementType::FAST_TEXT);
+	//win2->AddElement(FastInternal::FastElementType::FAST_TEXT);
+	//win2->AddElement(FastInternal::FastElementType::FAST_TEXT);
+	//win2->AddElement(FastInternal::FastElementType::FAST_TEXT);
 
 	/*FastInternal::FastWindow* win3 = Fast::Window();
 	win3->SetPos(FastVec2(502, 10));
