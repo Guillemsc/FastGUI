@@ -623,9 +623,9 @@ FastVector<FastInternal::FastWindow*> FastInternal::GetWindows()
 	return ret;
 }
 
-std::vector<FastInternal::FastDrawShape> FastInternal::GetDebugShapes()
+FastVector<FastInternal::FastDrawShape> FastInternal::GetDebugShapes()
 {
-	std::vector<FastInternal::FastDrawShape> ret;
+	FastVector<FastInternal::FastDrawShape> ret;
 
 	if (FastInternal::CheckInited())
 	{
@@ -651,35 +651,36 @@ void FastInternal::FastMain::Start()
 	draw = new FastDraw();		   AddModule(draw); 
 	elements = new FastElements(); AddModule(elements);
 
-	for (std::vector<FastModule*>::iterator it = modules.begin(); it != modules.end(); ++it)
-		(*it)->Start();
+	for (int i = 0; i < modules.Size(); ++i)
+		modules[i]->Start();
 }
 
 void FastInternal::FastMain::StartFrame()
 {
-	for (std::vector<FastModule*>::iterator it = modules.begin(); it != modules.end(); ++it)
-		(*it)->StartFrame();
+	for (int i = 0; i < modules.Size(); ++i)
+		modules[i]->StartFrame();
 }
 
 void FastInternal::FastMain::EndFrame()
 {
-	for (std::vector<FastModule*>::iterator it = modules.begin(); it != modules.end(); ++it)
-		(*it)->EndFrame();
+	for (int i = 0; i < modules.Size(); ++i)
+		modules[i]->EndFrame();
 }
 
 void FastInternal::FastMain::CleanUp()
 {
-	for (std::vector<FastModule*>::iterator it = modules.begin(); it != modules.end(); ++it)
+	for (int i = 0; i < modules.Size(); ++i)
 	{
-		(*it)->CleanUp();
-		FAST_DEL(*it);
+		FastModule* mod = modules[i];
+		mod->CleanUp();
+		FAST_DEL(mod);
 	}
-	modules.clear();
+	modules.Clear();
 }
 
 void FastInternal::FastMain::AddModule(FastModule * mod)
 {
-	modules.push_back(mod);
+	modules.PushBack(mod);
 }
 
 bool FastInternal::CheckInited()
@@ -709,6 +710,9 @@ void FastInternal::FastIO::StartFrame()
 	mouse_movement = mouse_pos - last_frame_mouse_pos;
 
 	last_frame_mouse_pos = mouse_pos;
+
+	left_mouse_down = false;
+	right_mouse_down = false;
 }
 
 void FastInternal::FastIO::CleanUp()
@@ -742,6 +746,7 @@ FastVec2 FastInternal::FastIO::GetMousePos()
 
 void FastInternal::FastIO::SetLeftMouseDown(bool set)
 {
+	left_mouse_down_repeat = set;
 	left_mouse_down = set;
 }
 
@@ -750,14 +755,25 @@ bool FastInternal::FastIO::GetLeftMouseDown()
 	return left_mouse_down;
 }
 
+bool FastInternal::FastIO::GetLeftMouseDownRepeat()
+{
+	return left_mouse_down_repeat;
+}
+
 void FastInternal::FastIO::SetRightMouseDown(bool set)
 {
+	right_mouse_down_repeat = set;
 	right_mouse_down = set;
 }
 
 bool FastInternal::FastIO::GetRightMouseDown()
 {
 	return right_mouse_down;
+}
+
+bool FastInternal::FastIO::GetRightMouseDownRepeat()
+{
+	return right_mouse_down_repeat;
 }
 
 FastVec2 FastInternal::FastIO::GetMouseMovement()
@@ -1022,7 +1038,7 @@ void FastInternal::FastFonts::LoadFont(const char * path, int font_size, FastFon
 				glyph.uvs_y1 = uvs_y1;
 				glyph.ratio_x_y = ratio_x_y;
 
-				ret->glyphs.push_back(glyph);
+				ret->glyphs.PushBack(glyph);
 
 				++glyphs_count;
 			}
@@ -1157,9 +1173,9 @@ FastInternal::FastGlyph FastInternal::FastFont::GetGlyphByChar(Fuchar c)
 	int index = 0;
 	index = stbtt_FindGlyphIndex(&info, c);
 
-	if (index < glyphs.size())
+	if (index < glyphs.Size())
 		ret = glyphs[index];
-	else if (glyphs.size() > 0)
+	else if (glyphs.Size() > 0)
 		ret = glyphs[0];
 
 	return ret;
@@ -1199,38 +1215,38 @@ void FastInternal::FastDraw::CleanUp()
 
 void FastInternal::FastDraw::DrawDebug()
 {
-	debug_shapes.clear();
+	debug_shapes.Clear();
 
 	fast_main->draw->StartShape();
 	fast_main->draw->Quad(FastVec2(0, 0), FastVec2(35, 23), FastColour(0.1f, 0.1f, 0.1f));
-	debug_shapes.push_back(fast_main->draw->FinishShape());
+	debug_shapes.PushBack(fast_main->draw->FinishShape());
 
 	fast_main->draw->StartShape();
 	std::string frames = std::to_string(fast_main->io->GetFps());
 	fast_main->draw->Text(FastVec2(2, 2), 20, fast_main->fonts->GetCurrFont(), frames, FastColour(1, 1, 1, 1));
-	debug_shapes.push_back(fast_main->draw->FinishShape());
+	debug_shapes.PushBack(fast_main->draw->FinishShape());
 
 	fast_main->draw->StartShape();
 	fast_main->draw->Quad(FastVec2(0, 2), FastVec2(100, 30), FastColour(0.1f, 0.1f, 0.1f));
-	debug_shapes.push_back(fast_main->draw->FinishShape());
+	debug_shapes.PushBack(fast_main->draw->FinishShape());
 
 	fast_main->draw->StartShape();
 	fast_main->draw->Text(FastVec2(0, 2), FastVec2(100, 30), fast_main->fonts->GetCurrFont(), frames, 
 		FastDrawTextAlign::FAST_DRAW_TEXT_ALIGN_CENTER, true, FastColour(1, 1, 1, 1));
-	debug_shapes.push_back(fast_main->draw->FinishShape());
+	debug_shapes.PushBack(fast_main->draw->FinishShape());
 
 	fast_main->draw->StartShape();
 	fast_main->draw->Quad(FastVec2(500, 300), FastVec2(300, 300), FastColour(0.1f, 0.1f, 0.1f));
-	debug_shapes.push_back(fast_main->draw->FinishShape());
+	debug_shapes.PushBack(fast_main->draw->FinishShape());
 
 	fast_main->draw->StartShape();
 	fast_main->draw->Text(FastVec2(500, 300), FastVec2(300, 30), fast_main->fonts->GetCurrFont(), "This is a fucking test xd jajajaj",
 		FastDrawTextAlign::FAST_DRAW_TEXT_ALIGN_CENTER, false, FastColour(1, 1, 1, 1));
-	debug_shapes.push_back(fast_main->draw->FinishShape());
+	debug_shapes.PushBack(fast_main->draw->FinishShape());
 
 }
 
-std::vector<FastInternal::FastDrawShape>& FastInternal::FastDraw::GetDebugShapes()
+FastVector<FastInternal::FastDrawShape>& FastInternal::FastDraw::GetDebugShapes()
 {
 	return debug_shapes;
 }
@@ -1615,9 +1631,9 @@ FastInternal::FastDrawShape::FastDrawShape()
 
 void FastInternal::FastDrawShape::AddPoint(FastVec2 point_pos)
 {
-	points.push_back(point_pos);
+	points.PushBack(point_pos);
 
-	if (points.size() == 1)
+	if (points.Size() == 1)
 	{
 		quad_size.x = point_pos.x;
 		quad_size.w = point_pos.x;
@@ -1648,28 +1664,28 @@ void FastInternal::FastDrawShape::AddTextureId(Fuint id)
 
 void FastInternal::FastDrawShape::Finish(FastColour colour)
 {
-	if (points.size() >= 3)
+	if (points.Size() >= 3)
 	{		
 		finished = true;
 
 		// Vertices, Uvs, Colours
 
-		int num_points = points.size();
+		int num_points = points.Size();
 
 		// Triangulize
 		for (int i = 0; i < num_points; i++)
 		{
 			FastVec2 curr_point = points[i];
 
-			vertices.push_back(curr_point.x);
-			vertices.push_back(curr_point.y);
-			vertices.push_back(0);
+			vertices.PushBack(curr_point.x);
+			vertices.PushBack(curr_point.y);
+			vertices.PushBack(0);
 
 			// Color for vertices
-			colours.push_back(colour.r);
-			colours.push_back(colour.g);
-			colours.push_back(colour.b);
-			colours.push_back(colour.a);
+			colours.PushBack(colour.r);
+			colours.PushBack(colour.g);
+			colours.PushBack(colour.b);
+			colours.PushBack(colour.a);
 
 			float x_uv = 0;
 			float y_uv = 0;
@@ -1684,15 +1700,15 @@ void FastInternal::FastDrawShape::Finish(FastColour colour)
 			x_uv = x_percentage;
 			y_uv = 1 - y_percentage;
 			
-			uvs.push_back(x_uv);
-			uvs.push_back(y_uv);
+			uvs.PushBack(x_uv);
+			uvs.PushBack(y_uv);
 
 			if (i > 1)
 			{
 				// Indices for triangle
-				indices.push_back(curr_indices_count);
-				indices.push_back(curr_indices_count + i - 1);
-				indices.push_back(curr_indices_count + i);
+				indices.PushBack(curr_indices_count);
+				indices.PushBack(curr_indices_count + i - 1);
+				indices.PushBack(curr_indices_count + i);
 			}
 		}
 
@@ -1701,35 +1717,35 @@ void FastInternal::FastDrawShape::Finish(FastColour colour)
 		//vertices_colour_uvs.insert(vertices_colour_uvs.end(), uvs.begin(), uvs.end());
 
 		curr_indices_count += num_points;
-		points.clear();
+		points.Clear();
 		quad_size = FastVec4();
 		
 		// -----------------------------------
 	}
 
-	points.clear();
+	points.Clear();
 }
 
 void FastInternal::FastDrawShape::Finish(FastColour colour, FastVec4 range_uvs)
 {
-	if (points.size() >= 3)
+	if (points.Size() >= 3)
 	{
-		int num_points = points.size();
+		int num_points = points.Size();
 
 		// Triangulize
 		for (int i = 0; i < num_points; i++)
 		{
 			FastVec2 curr_point = points[i];
 
-			vertices.push_back(curr_point.x);
-			vertices.push_back(curr_point.y);
-			vertices.push_back(0);
+			vertices.PushBack(curr_point.x);
+			vertices.PushBack(curr_point.y);
+			vertices.PushBack(0);
 
 			// Color for vertices
-			colours.push_back(colour.r);
-			colours.push_back(colour.g);
-			colours.push_back(colour.b);
-			colours.push_back(colour.a);
+			colours.PushBack(colour.r);
+			colours.PushBack(colour.g);
+			colours.PushBack(colour.b);
+			colours.PushBack(colour.a);
 
 			float ranged_x_uv = 0;
 			float ranged_y_uv = 0;
@@ -1758,15 +1774,15 @@ void FastInternal::FastDrawShape::Finish(FastColour colour, FastVec4 range_uvs)
 			}
 			ranged_y_uv = 1 - ranged_y_uv - (1 - range_uvs.y);
 
-			uvs.push_back(ranged_x_uv);
-			uvs.push_back(ranged_y_uv);
+			uvs.PushBack(ranged_x_uv);
+			uvs.PushBack(ranged_y_uv);
 
 			if (i > 1)
 			{
 				// Indices for triangle
-				indices.push_back(curr_indices_count);
-				indices.push_back(curr_indices_count + i - 1);
-				indices.push_back(curr_indices_count + i);
+				indices.PushBack(curr_indices_count);
+				indices.PushBack(curr_indices_count + i - 1);
+				indices.PushBack(curr_indices_count + i);
 			}
 		}
 
@@ -1775,7 +1791,7 @@ void FastInternal::FastDrawShape::Finish(FastColour colour, FastVec4 range_uvs)
 		//vertices_colour_uvs.insert(vertices_colour_uvs.end(), uvs.begin(), uvs.end());
 
 		curr_indices_count += num_points;
-		points.clear();
+		points.Clear();
 		quad_size = FastVec4();
 		
 		// -----------------------------------
@@ -1786,13 +1802,13 @@ void FastInternal::FastDrawShape::Clear()
 {
 	finished = false;
 
-	indices.clear();
-	vertices.clear();
-	colours.clear();
-	uvs.clear();
-	vertices_colour_uvs.clear();
+	indices.Clear();
+	vertices.Clear();
+	colours.Clear();
+	uvs.Clear();
+	vertices_colour_uvs.Clear();
 
-	points.clear();
+	points.Clear();
 }
 
 void FastInternal::FastDrawShape::SetClippingRect(const FastRect & rect)
@@ -1807,33 +1823,33 @@ Fuint * FastInternal::FastDrawShape::GetIndicesPtr()
 {
 	Fuint* ret = nullptr;
 
-	if (indices.size() > 0)
-		ret = indices.data();
+	if (indices.Size() > 0)
+		ret = indices.Data();
 	
 	return ret;
 }
 
-std::vector<Fuint> FastInternal::FastDrawShape::GetIndices()
+FastVector<Fuint> FastInternal::FastDrawShape::GetIndices()
 {
 	return indices;
 }
 
 Fuint FastInternal::FastDrawShape::GetIndicesCount()
 {
-	return indices.size();
+	return indices.Size();
 }
 
 float * FastInternal::FastDrawShape::GetVerticesPtr()
 {
 	float* ret = nullptr;
 
-	if (vertices.size() > 0)
-		ret = vertices.data();
+	if (vertices.Size() > 0)
+		ret = vertices.Data();
 	
 	return ret;
 }
 
-std::vector<float> FastInternal::FastDrawShape::GetVertices()
+FastVector<float> FastInternal::FastDrawShape::GetVertices()
 {
 	return vertices;
 }
@@ -1842,13 +1858,13 @@ float * FastInternal::FastDrawShape::GetColoursPtr()
 {
 	float* ret = nullptr;
 
-	if (colours.size() > 0)
-		ret = colours.data();
+	if (colours.Size() > 0)
+		ret = colours.Data();
 
 	return ret;
 }
 
-std::vector<float> FastInternal::FastDrawShape::GetColours()
+FastVector<float> FastInternal::FastDrawShape::GetColours()
 {
 	return colours;
 }
@@ -1857,13 +1873,13 @@ float * FastInternal::FastDrawShape::GetUvsPtr()
 {
 	float* ret = nullptr;
 
-	if (uvs.size() > 0)
-		ret = uvs.data();
+	if (uvs.Size() > 0)
+		ret = uvs.Data();
 
 	return ret;
 }
 
-std::vector<float> FastInternal::FastDrawShape::GetUvs()
+FastVector<float> FastInternal::FastDrawShape::GetUvs()
 {
 	return uvs;
 }
@@ -1872,13 +1888,13 @@ float * FastInternal::FastDrawShape::GetVerticesColourUvsPtr()
 {
 	float* ret = nullptr;
 
-	if (vertices_colour_uvs.size() > 0)
-		ret = vertices_colour_uvs.data();
+	if (vertices_colour_uvs.Size() > 0)
+		ret = vertices_colour_uvs.Data();
 
 	return ret;
 }
 
-std::vector<float> FastInternal::FastDrawShape::GetVerticesColoursUvs()
+FastVector<float> FastInternal::FastDrawShape::GetVerticesColoursUvs()
 {
 	return vertices_colour_uvs;
 }
@@ -2302,7 +2318,7 @@ void FastInternal::FastWindow::CheckMouseInput()
 	if (interactable_rects[0].hovered && fast_main->io->GetLeftMouseDown())
 		dragging = true;
 
-	if (dragging && !fast_main->io->GetLeftMouseDown())
+	if (dragging && !fast_main->io->GetLeftMouseDownRepeat())
 		dragging = false;
 
 	if (dragging)
@@ -2447,4 +2463,57 @@ FastInternal::FastInteractableRect::FastInteractableRect()
 FastInternal::FastInteractableRect::FastInteractableRect(const FastRect & _rect)
 {
 	rect = _rect;
+}
+
+FastInternal::FastElementButton::FastElementButton(const FastStyleElements & default_style, FastWindow * window) : 
+	FastElement(FastElementType::FAST_BUTTON, default_style, window)
+{
+}
+
+FastInternal::FastElementButton::~FastElementButton()
+{
+}
+
+void FastInternal::FastElementButton::Start()
+{
+}
+
+void FastInternal::FastElementButton::Update()
+{
+}
+
+void FastInternal::FastElementButton::CleanUp()
+{
+}
+
+void FastInternal::FastElementButton::SetText(std::string txt)
+{
+	if (text != txt)
+	{
+		text = txt;
+		DoRedraw();
+	}
+}
+
+FastVec2 FastInternal::FastElementButton::RecalucalteRect(const FastVec2 & starting_pos)
+{
+	rect.x = starting_pos.x;
+	rect.y = starting_pos.y;
+	rect.w = window->rect.w;
+	rect.h = style.physical.widget_height;
+
+	if (rect.x != last_rect.x || rect.y != last_rect.y || rect.w != last_rect.w || rect.h != last_rect.h)
+		Redraw();
+
+	last_rect = rect;
+
+	return rect.Size();
+}
+
+void FastInternal::FastElementButton::DoRedraw()
+{
+	if (needs_redraw)
+	{
+		draw_shapes.Clear();
+	}
 }

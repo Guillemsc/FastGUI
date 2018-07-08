@@ -221,7 +221,7 @@ class FastVector
 public:
 	FastVector() { };
 	FastVector(const FastVector& element) { Substitute(element); };
-	~FastVector() { Clear(); };
+	~FastVector() { FreeData(); };
 
 	TYPE& operator[] (Fuint index) { FAST_ASSERT(index < data_capacity, "Index out of boundaries"); return data_array[index]; };
 	void operator = (const FastVector & element) { Substitute(element); };
@@ -249,7 +249,7 @@ public:
 			Resize(data_capacity - chunk_size);
 	};
 
-	inline void Clear() { FAST_DEL_ARRAY(data_array); data_capacity = 0; data_used = 0; };
+	inline void Clear() { data_used = 0; };
 	inline int Size() { return data_used; };
 	inline TYPE* Data() { return data_array; };
 
@@ -304,13 +304,15 @@ private:
 		data_used = new_size;
 	};
 
+	void FreeData(){ FAST_DEL_ARRAY(data_array); data_capacity = 0; data_used = 0; }
+
 private:
 	TYPE *    data_array = nullptr;
 	Fuint     data_capacity = 0;
 
 	Fuint     data_used = 0;
 
-	const int chunk_size = 1;
+	const int chunk_size = 50;
 };
 
 // ---------------------------------------------------------------------------------------------------------
@@ -365,7 +367,7 @@ namespace FastInternal
 	FastVector<FastWindow*> GetWindows();
 
 	// Debug
-	std::vector<FastDrawShape> GetDebugShapes();
+	FastVector<FastDrawShape> GetDebugShapes();
 
 	// -----------------------------------------------------------------------------------------------------
 
@@ -408,7 +410,7 @@ namespace FastInternal
 		FastElements*  elements = nullptr;
 
 	private:
-		std::vector<FastModule*> modules;
+		FastVector<FastModule*> modules;
 	};
 
 	bool CheckInited();
@@ -460,8 +462,10 @@ namespace FastInternal
 
 		void SetLeftMouseDown(bool set);
 		bool GetLeftMouseDown();
+		bool GetLeftMouseDownRepeat();
 		void SetRightMouseDown(bool set);
 		bool GetRightMouseDown();
+		bool GetRightMouseDownRepeat();
 
 		FastVec2 GetMouseMovement();
 
@@ -482,6 +486,8 @@ namespace FastInternal
 		FastVec2			 mouse_pos;
 		FastVec2             last_frame_mouse_pos;
 
+		bool				 left_mouse_down_repeat = false;
+		bool				 right_mouse_down_repeat = false;
 		bool				 left_mouse_down = false;
 		bool				 right_mouse_down = false;
 		FastVec2			 mouse_movement;
@@ -566,7 +572,7 @@ namespace FastInternal
 		Fuint    texture_id = 0;
 		FastVec2 size = FastVec2(0, 0);
 
-		std::vector<FastGlyph> glyphs;
+		FastVector<FastGlyph> glyphs;
 
 	private:
 	
@@ -646,16 +652,16 @@ namespace FastInternal
 		void SetClippingRect(const FastRect& rect);
 
 		Fuint* GetIndicesPtr();
-		std::vector<Fuint> GetIndices();
+		FastVector<Fuint> GetIndices();
 		Fuint GetIndicesCount();
 		float* GetVerticesPtr();
-		std::vector<float> GetVertices();
+		FastVector<float> GetVertices();
 		float* GetColoursPtr();
-		std::vector<float> GetColours();
+		FastVector<float> GetColours();
 		float* GetUvsPtr();
-		std::vector<float> GetUvs();
+		FastVector<float> GetUvs();
 		float* GetVerticesColourUvsPtr();
-		std::vector<float> GetVerticesColoursUvs();
+		FastVector<float> GetVerticesColoursUvs();
 
 		bool GetUsesClippingRect() const;
 		FastRect GetClippingRect() const;
@@ -671,18 +677,18 @@ namespace FastInternal
 		Fuint UvsSize() const;
 
 	private:
-		std::vector<Fuint>     indices;
-		std::vector<float>     vertices;
-		std::vector<float>     colours;
-		std::vector<float>     uvs;
-		std::vector<float>     vertices_colour_uvs;
+		FastVector<Fuint>     indices;
+		FastVector<float>     vertices;
+		FastVector<float>     colours;
+		FastVector<float>     uvs;
+		FastVector<float>     vertices_colour_uvs;
 
 		Fuint				  curr_indices_count = 0;
 
 		Fuint                 texture_id = 0;
 
 		bool				  finished = false;
-		std::vector<FastVec2> points;
+		FastVector<FastVec2> points;
 
 		bool				  uses_clipping_rect = false;
 		FastRect			  clipping_rect;
@@ -713,7 +719,7 @@ namespace FastInternal
 		void CleanUp();
 
 		void DrawDebug();
-		std::vector<FastDrawShape>& GetDebugShapes();
+		FastVector<FastDrawShape>& GetDebugShapes();
 
 		// Shape management
 		void StartShape();
@@ -744,7 +750,7 @@ namespace FastInternal
 		void BezierQuad(FastVec2 pos, FastVec2 size, FastVec2 p1, FastVec2 p2); // Not working
 
 	private:
-		std::vector<FastDrawShape> debug_shapes;
+		FastVector<FastDrawShape> debug_shapes;
 
 		bool	      drawing_shape = false;
 		FastDrawShape curr_shape;
@@ -837,9 +843,32 @@ namespace FastInternal
 		std::string text;
 	};
 
+	class FastElementButton : public FastElement
+	{
+		friend FastWindow;
+
+	public:
+		FastElementButton(const FastStyleElements& default_style, FastWindow* window);
+		~FastElementButton();
+
+		void Start();
+		void Update();
+		void CleanUp();
+
+		void SetText(std::string txt);
+
+	private:
+		FastVec2 RecalucalteRect(const FastVec2& starting_pos);
+		void DoRedraw();
+
+	private:
+		std::string text;
+	};
+
 	class FastWindow 
 	{
 		friend FastElementText;
+		friend FastElementButton;
 		friend FastElements;
 	public:
 		FastWindow(const FastStyleElements& default_style);

@@ -124,12 +124,11 @@ void FastImpl::Render()
 		++iterations_count;
 	}
 
-	std::vector<FastInternal::FastDrawShape> debug_shapes = FastInternal::GetDebugShapes();
+	FastVector<FastInternal::FastDrawShape> debug_shapes = FastInternal::GetDebugShapes();
 
-	for (std::vector<FastInternal::FastDrawShape>::iterator it = debug_shapes.begin(); it != debug_shapes.end(); ++it)
-	{
-		RenderShape(*it);
-	}
+	for(int i = 0; i < debug_shapes.Size(); ++i)
+		RenderShape(debug_shapes[i]);
+	
 
 	glDisableClientState(GL_COLOR_ARRAY);
 	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
