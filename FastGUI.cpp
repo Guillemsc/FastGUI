@@ -4,6 +4,8 @@ static FastInternal::FastMain* fast_main = nullptr;
 
 FastVec2::FastVec2()
 {
+	x = 0.0f;
+	y = 0.0f;
 }
 
 FastVec2::FastVec2(float _x, float _y)
@@ -1117,6 +1119,25 @@ void FastInternal::FastDraw::DrawDebug()
 	std::string frames = std::to_string(fast_main->io->GetFps());
 	fast_main->draw->Text(FastVec2(2, 2), 20, fast_main->fonts->GetCurrFont(), frames, FastColour(1, 1, 1, 1));
 	debug_shapes.push_back(fast_main->draw->FinishShape());
+
+	fast_main->draw->StartShape();
+	fast_main->draw->Quad(FastVec2(0, 2), FastVec2(100, 30), FastColour(0.1f, 0.1f, 0.1f));
+	debug_shapes.push_back(fast_main->draw->FinishShape());
+
+	fast_main->draw->StartShape();
+	fast_main->draw->Text(FastVec2(0, 2), FastVec2(100, 30), fast_main->fonts->GetCurrFont(), frames, 
+		FastDrawTextAlign::FAST_DRAW_TEXT_ALIGN_CENTER, true, FastColour(1, 1, 1, 1));
+	debug_shapes.push_back(fast_main->draw->FinishShape());
+
+	fast_main->draw->StartShape();
+	fast_main->draw->Quad(FastVec2(500, 300), FastVec2(300, 300), FastColour(0.1f, 0.1f, 0.1f));
+	debug_shapes.push_back(fast_main->draw->FinishShape());
+
+	fast_main->draw->StartShape();
+	fast_main->draw->Text(FastVec2(500, 300), FastVec2(300, 30), fast_main->fonts->GetCurrFont(), "This is a fucking test xd jajajaj",
+		FastDrawTextAlign::FAST_DRAW_TEXT_ALIGN_CENTER, false, FastColour(1, 1, 1, 1));
+	debug_shapes.push_back(fast_main->draw->FinishShape());
+
 }
 
 std::vector<FastInternal::FastDrawShape>& FastInternal::FastDraw::GetDebugShapes()
@@ -1387,30 +1408,115 @@ void FastInternal::FastDraw::Text(FastVec2 pos, float size, FastFont* font, std:
 	}
 }
 
+void FastInternal::FastDraw::Text(FastVec2 pos, FastVec2 size, FastFont * font, std::string text, FastDrawTextAlign align, bool overflow, FastColour colour)
+{
+	if (font != nullptr)
+	{
+		FastVec2 curr_pos;
+
+		std::vector<FastDrawTextLineInfo> lines_size_x;
+
+		for (int i = 0; i < text.size(); ++i)
+		{
+			Fuchar c = text[i];
+
+			if (c != ' ')
+			{
+				FastGlyph glph = font->GetGlyphByChar(c);
+
+				int word_width = size.y * glph.ratio_x_y;
+
+				int min_x = curr_pos.x;
+				int max_x = curr_pos.x + word_width;
+				int min_y = curr_pos.y;
+				int max_y = curr_pos.y + size.y;
+
+				curr_pos.x = max_x + (size.y * 0.11f);
+
+				if (!overflow)
+				{
+					if (max_x > size.x)
+					{
+						FastDrawTextLineInfo line;
+						line.x_size = size.x;
+						line.max_word = i;
+						lines_size_x.push_back(line);
+						curr_pos.x = 0;
+					}
+				}
+			}
+			else
+				curr_pos.x += size.y * 0.25f;
+		}
+		FastDrawTextLineInfo line;
+		line.x_size = curr_pos.x;
+		line.max_word = text.size() - 1;
+		lines_size_x.push_back(line);
+
+		curr_pos = pos;
+		Fuint curr_line = 0;
+		bool fist_time_advance = true;
+		for (int i = 0; i < text.size(); ++i)
+		{
+			Fuchar c = text[i];
+
+			if (c != ' ')
+			{
+				FastGlyph glph = font->GetGlyphByChar(c);
+
+				int word_width = size.y * glph.ratio_x_y;
+
+				int min_x = curr_pos.x;
+				int min_y = curr_pos.y;
+
+				if (fist_time_advance)
+				{
+					switch (align)
+					{
+					case FastDrawTextAlign::FAST_DRAW_TEXT_ALIGN_RIGHT:
+						min_x += size.x - lines_size_x[curr_line].x_size;
+						break;
+					case FastDrawTextAlign::FAST_DRAW_TEXT_ALIGN_CENTER:
+						min_x += (size.x - (lines_size_x[curr_line].x_size)) * 0.5f;
+						break;
+					}
+
+					fist_time_advance = false;
+				}
+
+				int max_x = min_x + word_width;
+				int max_y = min_y + size.y;
+
+				curr_shape.AddPoint(FastVec2(min_x, min_y));
+				curr_shape.AddPoint(FastVec2(min_x, max_y));
+				curr_shape.AddPoint(FastVec2(max_x, max_y));
+				curr_shape.AddPoint(FastVec2(max_x, min_y));
+				curr_shape.Finish(colour, FastVec4(glph.uvs_x0.x, glph.uvs_x0.y, glph.uvs_y1.x, glph.uvs_y1.y));
+
+				curr_pos.x = max_x + (size.y * 0.11f);
+
+				if (lines_size_x[curr_line].max_word == i)
+				{
+					fist_time_advance = true;
+					curr_pos.x = pos.x;
+					curr_pos.y += size.y;
+					++curr_line;
+				}
+			}
+			else
+				curr_pos.x += size.y * 0.25f;
+		}
+
+		curr_shape.AddTextureId(fast_main->fonts->GetCurrFont()->texture_id);
+
+		if (clipping_enabled)
+			curr_shape.SetClippingRect(curr_clipping_rect);
+	}
+}
+
 void FastInternal::FastDraw::BezierQuad(FastVec2 pos, FastVec2 size, FastVec2 p1, FastVec2 p2)
 {
-	/*FastInternal::FastDrawShape shape;
 
-	std::vector<FastVec2> points; points.push_back(p1); points.push_back(p2);
-
-	for (float t = 0; t < 1; t += 0.6f)
-	{
-		int i = points.size() - 1;
-		while (i > 0)
-		{			
-			for (int k = 0; k < i; k++)
-			{
-				float point_x = points[k].x + t * (points[k + 1].x - points[k].x);
-				float point_y = points[k].y + t * (points[k + 1].y - points[k].y);
-
-				shape.AddPoint(FastVec2(pos.x + point_x, pos.y + point_y));
-			}
-			--i;
-		}
-	}
-	
-	shape.Finish(FastColour(1, 1, 1, 1));
-	shapes.push_back(shape);*/
 }
 
 FastInternal::FastDrawShape::FastDrawShape()
@@ -1996,8 +2102,9 @@ void FastInternal::FastWindow::DoRedraw()
 			FastColour title_text_colour = style.colours.text;
 			title_text_colour.a = style.alpha;
 			float text_height = bar_height - (y_padding * 2);
-			fast_main->draw->Text(FastVec2(pos.x + x_padding, pos.y + y_padding),
-				text_height, fast_main->fonts->GetCurrFont(), title_text, title_text_colour);
+			fast_main->draw->Text(FastVec2(pos.x, pos.y + y_padding),
+				FastVec2(size.x, text_height), fast_main->fonts->GetCurrFont(), title_text, 
+				FastInternal::FastDrawTextAlign::FAST_DRAW_TEXT_ALIGN_CENTER, true, title_text_colour);
 			draw_shapes.PushBack(fast_main->draw->FinishShape());
 		}
 

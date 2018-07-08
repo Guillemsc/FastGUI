@@ -684,6 +684,19 @@ namespace FastInternal
 		FastVec4			  quad_size;
 	};
 
+	enum FastDrawTextAlign
+	{
+		FAST_DRAW_TEXT_ALIGN_LEFT,
+		FAST_DRAW_TEXT_ALIGN_CENTER,
+		FAST_DRAW_TEXT_ALIGN_RIGHT,
+	};
+
+	struct FastDrawTextLineInfo
+	{
+		float x_size = 0;
+		Fuint max_word = 0;
+	};
+
 	class FastDraw : public FastModule
 	{
 	public:
@@ -720,6 +733,7 @@ namespace FastInternal
 
 		void FontAtlas(FastVec2 pos, FastVec2 size, FastFont* font, FastColour colour);
 		void Text(FastVec2 pos, float size, FastFont* font, std::string text, FastColour colour);
+		void Text(FastVec2 pos, FastVec2 size, FastFont* font, std::string text, FastDrawTextAlign align, bool overflow, FastColour colour);
 
 		void BezierQuad(FastVec2 pos, FastVec2 size, FastVec2 p1, FastVec2 p2); // Not working
 
