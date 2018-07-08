@@ -92,8 +92,8 @@ int main(int argc, char ** argv)
 	win->AddElement(FastInternal::FastElementType::FAST_TEXT);
 	win->AddElement(FastInternal::FastElementType::FAST_TEXT);
 
-	FastInternal::FastWindow* win2 = Fast::Window();
-	win2->SetPos(FastVec2(651, 10));
+	/*FastInternal::FastWindow* win2 = Fast::Window();
+	win2->SetPos(FastVec2(0, 10));
 	win2->SetTitle("Testing window");
 	win2->AddElement(FastInternal::FastElementType::FAST_TEXT);
 	win2->AddElement(FastInternal::FastElementType::FAST_TEXT);
@@ -112,7 +112,7 @@ int main(int argc, char ** argv)
 	win2->AddElement(FastInternal::FastElementType::FAST_TEXT);
 	win2->AddElement(FastInternal::FastElementType::FAST_TEXT);
 	win2->AddElement(FastInternal::FastElementType::FAST_TEXT);
-	win2->AddElement(FastInternal::FastElementType::FAST_TEXT);
+	win2->AddElement(FastInternal::FastElementType::FAST_TEXT);*/
 
 	//FastInternal::FastWindow* win3 = Fast::Window();
 	//win3->SetPos(FastVec2(502, 10));

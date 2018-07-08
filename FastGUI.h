@@ -139,6 +139,7 @@ public:
 	FastColour(float r, float g, float b);
 	FastColour(const FastVec4& vec);
 	FastColour(float r, float g, float b, float a);
+	FastColour(int hexadecimal_val);
 
 	FastColour operator + (const FastColour& vec);
 	FastColour operator - (const FastColour& vec);
@@ -161,6 +162,8 @@ public:
 	FastRect(float x, float y, float w, float h);
 	FastRect(const FastVec4& vec);
 	FastRect(const FastVec2& pos, const FastVec2 size);
+
+	void operator = (const FastRect& rect);
 
 	inline float xw();
 	inline float yh();
@@ -220,7 +223,7 @@ public:
 	FastVector(const FastVector& element) { Substitute(element); };
 	~FastVector() { Clear(); };
 
-	TYPE operator[] (Fuint index) { FAST_ASSERT(index < data_capacity, "Index out of boundaries"); return data_array[index]; };
+	TYPE& operator[] (Fuint index) { FAST_ASSERT(index < data_capacity, "Index out of boundaries"); return data_array[index]; };
 	void operator = (const FastVector & element) { Substitute(element); };
 	void operator += (const FastVector& element) { Concatenate(element); };
 
@@ -349,11 +352,14 @@ namespace FastInternal
 	void Init();
 	void Quit();
 	void NewFrame(FastVec2 window_size, FastVec2 mouse_pos, float delta_time);
+	void EndFrame();
 	void SetLoadTexture(std::function<int(Fuchar* data, FastVec2 size)> load_texture);
 
 	// Io
 	FastVec2 GetViewport();
 	void SetKeyMapping(FastInternal::FastKeyMapping fast_key, Fuint maping_index);
+	void SetMouseLeftButton(bool set);
+	void SetMouseRightButton(bool set);
 
 	// Elements
 	FastVector<FastWindow*> GetWindows();
@@ -375,6 +381,7 @@ namespace FastInternal
 		virtual void Start() = 0;
 		virtual void CleanUp() = 0;
 		virtual void StartFrame() {};
+		virtual void EndFrame() {};
 	};
 
 	class FastMain
@@ -385,6 +392,7 @@ namespace FastInternal
 
 		void Start();
 		void StartFrame();
+		void EndFrame();
 		void CleanUp();
 
 		std::function<int(Fuchar* data, FastVec2 size)> load_texture;
@@ -432,19 +440,6 @@ namespace FastInternal
 		FAST_KEY_COUNT
 	};
 
-	enum FastMouseState
-	{
-		FAST_MOUSE_IDLE,
-		FAST_MOUSE_DOWN,
-	};
-
-	enum FastMouseCenterState
-	{
-		FAST_MOUSE_CENTER_STATE_UP,
-		FAST_MOUSE_CENTER_STATE_DOWN,
-		FAST_MOUSE_CENTER_STATE_IDLE,
-	};
-
 	class FastIO : public FastModule
 	{
 	public:
@@ -452,6 +447,7 @@ namespace FastInternal
 		~FastIO();
 
 		void Start();
+		void StartFrame();
 		void CleanUp();
 
 		void SetViewportSize(const FastVec2& set);
@@ -461,6 +457,13 @@ namespace FastInternal
 
 		void SetMousePos(const FastVec2& set);
 		FastVec2 GetMousePos();
+
+		void SetLeftMouseDown(bool set);
+		bool GetLeftMouseDown();
+		void SetRightMouseDown(bool set);
+		bool GetRightMouseDown();
+
+		FastVec2 GetMouseMovement();
 
 		void AddKeyMaping(FastKeyMapping key, Fuint maped_key);
 
@@ -476,12 +479,12 @@ namespace FastInternal
 
 		Fuint				 key_maping[FastKeyMapping::FAST_KEY_COUNT];
 
-		FastMouseState       mouse_left_button = FastMouseState::FAST_MOUSE_IDLE;
-		FastMouseState       mouse_right_button = FastMouseState::FAST_MOUSE_IDLE;
-
-		FastMouseCenterState mouse_center_button = FastMouseCenterState::FAST_MOUSE_CENTER_STATE_IDLE;
-
 		FastVec2			 mouse_pos;
+		FastVec2             last_frame_mouse_pos;
+
+		bool				 left_mouse_down = false;
+		bool				 right_mouse_down = false;
+		FastVec2			 mouse_movement;
 
 		float			     time_since_start_sec = 0.0f;
 		Fuint				 frames_since_start = 0;
@@ -762,6 +765,16 @@ namespace FastInternal
 		FAST_TEXT,
 	};
 
+	class FastInteractableRect
+	{
+	public:
+		FastInteractableRect();
+		FastInteractableRect(const FastRect& rect);
+
+		FastRect rect;
+		bool hovered = false;
+	};
+
 	class FastElement
 	{
 		friend FastElements;
@@ -776,9 +789,9 @@ namespace FastInternal
 		virtual void Update() = 0;
 		virtual void CleanUp() = 0;
 
-		virtual FastVec2 RecalucalteRect(const FastVec2& starting_pos) = 0;
-
 		FastVector<FastDrawShape>& GetShapes();
+
+		virtual FastVec2 RecalucalteRect(const FastVec2& starting_pos) = 0;
 
 		void SetStyle(const FastStyleElements& style);
 		
@@ -787,10 +800,8 @@ namespace FastInternal
 		virtual void DoRedraw() = 0;
 		void CheckMouseInput();
 
-		void SetHovered(bool set);
-
 	protected:
-		FastElementType type;
+		FastElementType   type;
 		FastStyleElements style;
 		FastWindow* window = nullptr;
 
@@ -801,6 +812,7 @@ namespace FastInternal
 		FastRect last_rect;
 
 		bool     hovered = false;
+		FastVector<FastInteractableRect> interactable_rects;
 	};
 
 	class FastElementText : public FastElement
@@ -846,18 +858,19 @@ namespace FastInternal
 		void SetTitle(std::string title);
 		void SetUseTitle(bool set);
 		void SetPos(const FastVec2& pos);
+		void AddPos(const FastVec2 add);
 		void SetAnchor(const FastVec2& anchor);
 		void SetSize(const FastVec2& size);
 
 	private:
 		FastRect GetWindowDrawingRect();
+
 		void Redraw();
 		void DoRedraw();
+
 		void RecalucalteRect();
 		void RecalculateElementsRect();
 		void CheckMouseInput();
-
-		void SetHovered(bool set);
 
 	private:
 		FastStyleElements style;
@@ -873,6 +886,8 @@ namespace FastInternal
 		FastVec2 local_pos;
 		FastVec2 anchor;
 
+		bool     dragging = false;
+
 		bool     interactable = true;
 		bool	 visible = true;
 		bool     draggable = false;
@@ -880,7 +895,8 @@ namespace FastInternal
 		std::string title_text;
 		bool	 uses_title_text = true;
 
-		bool	 hovered = false;
+		bool hovered = false;
+		FastVector<FastInteractableRect> interactable_rects;
 	};
 
 	class FastElements : public FastModule
@@ -901,6 +917,7 @@ namespace FastInternal
 		FastWindow* CreateWin();
 
 	private:
+		void HandleElementsInput();
 
 	private:
 		FastVector<FastWindow*> windows;

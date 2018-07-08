@@ -294,6 +294,13 @@ FastColour::FastColour(float _r, float _g, float _b, float _a)
 	a = _a;
 }
 
+FastColour::FastColour(int hexadecimal_val)
+{	
+	r = ((hexadecimal_val >> 16) & 0xFF) / 255.0f;
+	g = ((hexadecimal_val >> 8) & 0xFF) / 255.0f;
+	b = ((hexadecimal_val) & 0xFF) / 255.0f;
+}
+
 FastColour FastColour::operator+(const FastColour & vec)
 {
 	return FastColour(r + vec.r, g + vec.g, b + vec.b, a + vec.a);
@@ -373,6 +380,14 @@ FastRect::FastRect(const FastVec2 & pos, const FastVec2 size)
 	y = pos.y;
 	w = size.x;
 	h = size.y;
+}
+
+void FastRect::operator=(const FastRect & rect)
+{
+	x = rect.x;
+	y = rect.y;
+	w = rect.w;
+	h = rect.h;
 }
 
 FastBuffer::FastBuffer()
@@ -547,6 +562,14 @@ void FastInternal::NewFrame(FastVec2 window_size, FastVec2 mouse_pos, float delt
 	}
 }
 
+void FastInternal::EndFrame()
+{
+	if (FastInternal::CheckInited())
+	{
+		fast_main->EndFrame();
+	}
+}
+
 void FastInternal::SetLoadTexture(std::function<int(Fuchar*data, FastVec2 size)> _load_texture)
 {
 	fast_main->load_texture = _load_texture;
@@ -569,6 +592,22 @@ void FastInternal::SetKeyMapping(FastInternal::FastKeyMapping fast_key, Fuint ma
 	if (FastInternal::CheckInited())
 	{
 		fast_main->io->AddKeyMaping(fast_key, maping_index);
+	}
+}
+
+void FastInternal::SetMouseLeftButton(bool set)
+{
+	if (FastInternal::CheckInited())
+	{
+		fast_main->io->SetLeftMouseDown(set);
+	}
+}
+
+void FastInternal::SetMouseRightButton(bool set)
+{
+	if (FastInternal::CheckInited())
+	{
+		fast_main->io->SetRightMouseDown(set);
 	}
 }
 
@@ -622,6 +661,12 @@ void FastInternal::FastMain::StartFrame()
 		(*it)->StartFrame();
 }
 
+void FastInternal::FastMain::EndFrame()
+{
+	for (std::vector<FastModule*>::iterator it = modules.begin(); it != modules.end(); ++it)
+		(*it)->EndFrame();
+}
+
 void FastInternal::FastMain::CleanUp()
 {
 	for (std::vector<FastModule*>::iterator it = modules.begin(); it != modules.end(); ++it)
@@ -659,6 +704,13 @@ void FastInternal::FastIO::Start()
 {
 }
 
+void FastInternal::FastIO::StartFrame()
+{
+	mouse_movement = mouse_pos - last_frame_mouse_pos;
+
+	last_frame_mouse_pos = mouse_pos;
+}
+
 void FastInternal::FastIO::CleanUp()
 {
 }
@@ -686,6 +738,31 @@ void FastInternal::FastIO::SetMousePos(const FastVec2 & set)
 FastVec2 FastInternal::FastIO::GetMousePos()
 {
 	return mouse_pos;
+}
+
+void FastInternal::FastIO::SetLeftMouseDown(bool set)
+{
+	left_mouse_down = set;
+}
+
+bool FastInternal::FastIO::GetLeftMouseDown()
+{
+	return left_mouse_down;
+}
+
+void FastInternal::FastIO::SetRightMouseDown(bool set)
+{
+	right_mouse_down = set;
+}
+
+bool FastInternal::FastIO::GetRightMouseDown()
+{
+	return right_mouse_down;
+}
+
+FastVec2 FastInternal::FastIO::GetMouseMovement()
+{
+	return mouse_movement;
 }
 
 void FastInternal::FastIO::AddKeyMaping(FastKeyMapping key, Fuint maped_key)
@@ -765,10 +842,10 @@ void FastInternal::FastStyle::SetDefaultStyle()
 	def.physical.widget_y_padding = 3;
 	def.physical.widgets_y_separation = 2;
 
-	def.colours.win_bg = FastColour(0.2f, 0.2f, 0.2f);
-	def.colours.win_title_bar = FastColour(0.35f, 0.07f, 0.07f);
-	def.colours.text = FastColour(1, 1, 1);
-	def.colours.widget_bg = FastColour(0.07f, 0.4f, 0.3f);
+	def.colours.win_bg = FastColour(0xFFFFFF);
+	def.colours.win_title_bar = FastColour(0xF44336);
+	def.colours.text = FastColour(0xFFFFFF);
+	def.colours.widget_bg = FastColour(0x4CAF50);
 }
 
 FastInternal::FastFonts::FastFonts()
@@ -1874,30 +1951,7 @@ void FastInternal::FastElements::CleanUp()
 
 void FastInternal::FastElements::StartFrame()
 {
-	if (hovered_window != nullptr)
-	{
-		hovered_window->SetHovered(true);
-	}
-
-	if (last_hovered_window != hovered_window && last_hovered_window != nullptr)
-	{
-		last_hovered_window->SetHovered(false);
-	}
-
-	if (hovered_element != nullptr)
-	{
-		hovered_element->SetHovered(true);
-	}
-
-	if (last_hovered_element != hovered_element && last_hovered_element != nullptr)
-	{
-		last_hovered_element->SetHovered(false);
-	}
-
-	last_hovered_window = hovered_window;
-	last_hovered_element = hovered_element;
-	hovered_window = nullptr;
-	hovered_element = nullptr;
+	HandleElementsInput();
 }
 
 FastVector<FastInternal::FastWindow*>& FastInternal::FastElements::GetWindows()
@@ -1915,6 +1969,120 @@ FastInternal::FastWindow * FastInternal::FastElements::CreateWin()
 	windows.PushBack(ret);
 
 	return ret;
+}
+
+void FastInternal::FastElements::HandleElementsInput()
+{
+	// Window Input -----------------------------
+	if (hovered_window != nullptr)
+	{
+		if (hovered_window->hovered != true)
+		{
+			hovered_window->hovered = true;
+			hovered_window->Redraw();
+		}
+
+		for (int i = 0; i < hovered_window->interactable_rects.Size(); ++i)
+		{
+			FastInteractableRect* i_rect = &hovered_window->interactable_rects[i];
+
+			if (i_rect->rect.Contains(fast_main->io->GetMousePos()))
+			{
+				if (i_rect->hovered != true)
+				{
+					i_rect->hovered = true;
+					hovered_window->Redraw();
+				}
+			}
+			else
+			{
+				if (i_rect->hovered != false)
+				{
+					i_rect->hovered = false;
+					hovered_window->Redraw();
+				}
+			}
+		}
+	}
+
+	if (last_hovered_window != hovered_window && last_hovered_window != nullptr)
+	{
+		if (last_hovered_window->hovered != false)
+		{
+			last_hovered_window->hovered = false;
+			last_hovered_window->Redraw();
+		}
+
+		for (int i = 0; i < last_hovered_window->interactable_rects.Size(); ++i)
+		{
+			FastInteractableRect* i_rect = &last_hovered_window->interactable_rects[i];
+			
+			if (i_rect->hovered != false)
+			{
+				i_rect->hovered = false;
+				last_hovered_window->Redraw();
+			}		
+		}
+	}
+	// -------------------------------------------
+
+	// Elements Input ----------------------------
+
+	if (hovered_element!= nullptr)
+	{
+		if (hovered_element->hovered != true)
+		{
+			hovered_element->hovered = true;
+			hovered_element->Redraw();
+		}
+
+		for (int i = 0; i < hovered_element->interactable_rects.Size(); ++i)
+		{
+			FastInteractableRect* i_rect = &hovered_element->interactable_rects[i];
+
+			if (i_rect->rect.Contains(fast_main->io->GetMousePos()))
+			{
+				if (i_rect->hovered != true)
+				{
+					i_rect->hovered = true;
+					hovered_element->Redraw();
+				}
+			}
+			else
+			{
+				if (i_rect->hovered != false)
+				{
+					i_rect->hovered = false;
+					hovered_element->Redraw();
+				}
+			}
+		}
+	}
+
+	if (last_hovered_element != hovered_element && last_hovered_element != nullptr)
+	{
+		if (last_hovered_element->hovered != false)
+		{
+			last_hovered_element->hovered = false;
+			last_hovered_element->Redraw();
+		}
+
+		for (int i = 0; i < last_hovered_element->interactable_rects.Size(); ++i)
+		{
+			FastInteractableRect* i_rect = &last_hovered_element->interactable_rects[i];
+
+			if (i_rect->hovered != false)
+			{
+				i_rect->hovered = false;
+				last_hovered_element->Redraw();
+			}
+		}
+	}
+
+	last_hovered_window = hovered_window;
+	last_hovered_element = hovered_element;
+	hovered_window = nullptr;
+	hovered_element = nullptr;
 }
 
 FastInternal::FastElement::FastElement(const FastElementType& type, const FastStyleElements& default_style, FastWindow* _window)
@@ -1963,15 +2131,6 @@ void FastInternal::FastElement::CheckMouseInput()
 		fast_main->elements->hovered_element = this;
 }
 
-void FastInternal::FastElement::SetHovered(bool set)
-{
-	if (hovered != set)
-	{
-		hovered = set;
-		Redraw();
-	}
-}
-
 FastInternal::FastWindow::FastWindow(const FastStyleElements& _default_style)
 {
 	style = _default_style; 
@@ -1986,6 +2145,7 @@ void FastInternal::FastWindow::Start()
 	SetPos(FastVec2(10, 10));
 	SetSize(FastVec2(250, 600));
 	title_text = "Window";
+	interactable_rects.PushBack(FastInteractableRect());
 }
 
 void FastInternal::FastWindow::Update()
@@ -2060,8 +2220,15 @@ void FastInternal::FastWindow::SetUseTitle(bool set)
 
 void FastInternal::FastWindow::SetPos(const FastVec2 & pos)
 {
-	local_pos.x = pos.x;
-	local_pos.y = pos.y;
+	local_pos = pos;
+}
+
+void FastInternal::FastWindow::AddPos(const FastVec2 add)
+{
+	local_pos += add;
+
+	if (add.x > 0)
+		int a = 0;
 }
 
 void FastInternal::FastWindow::SetAnchor(const FastVec2& _anchor)
@@ -2117,12 +2284,6 @@ void FastInternal::FastWindow::RecalculateElementsRect()
 {
 	FastVec2 acumulated_height = GetWindowDrawingRect().Pos();
 
-	//for (std::vector<FastElement*>::iterator it = elements.begin(); it != elements.end(); ++it)
-	//{
-	//	acumulated_height.y += (*it)->RecalucalteRect(acumulated_height).y;
-	//	acumulated_height.y += style.physical.widgets_y_separation;
-	//}
-
 	for (int i = 0; i < elements.Size(); ++i)
 	{
 		acumulated_height.y += elements[i]->RecalucalteRect(acumulated_height).y;
@@ -2132,16 +2293,21 @@ void FastInternal::FastWindow::RecalculateElementsRect()
 
 void FastInternal::FastWindow::CheckMouseInput()
 {
-	if (rect.Contains(fast_main->io->GetMousePos()))
-		fast_main->elements->hovered_window = this;
-}
-
-void FastInternal::FastWindow::SetHovered(bool set)
-{
-	if (hovered != set)
+	if (interactable)
 	{
-		hovered = set;
-		Redraw();
+		if (rect.Contains(fast_main->io->GetMousePos()))
+			fast_main->elements->hovered_window = this;
+	}
+
+	if (interactable_rects[0].hovered && fast_main->io->GetLeftMouseDown())
+		dragging = true;
+
+	if (dragging && !fast_main->io->GetLeftMouseDown())
+		dragging = false;
+
+	if (dragging)
+	{
+		AddPos(fast_main->io->GetMouseMovement());
 	}
 }
 
@@ -2174,6 +2340,7 @@ void FastInternal::FastWindow::DoRedraw()
 			title_bar_colour.a = style.alpha;
 			fast_main->draw->Quad(pos, FastVec2(size.x, bar_height), title_bar_colour);
 			draw_shapes.PushBack(fast_main->draw->FinishShape());
+			interactable_rects[0].rect = FastRect(pos, FastVec2(size.x, bar_height));
 
 			fast_main->draw->StartShape();
 			FastColour title_text_colour = style.colours.text;
@@ -2271,4 +2438,13 @@ void FastInternal::FastElementText::DoRedraw()
 
 		needs_redraw = false;
 	}
+}
+
+FastInternal::FastInteractableRect::FastInteractableRect()
+{
+}
+
+FastInternal::FastInteractableRect::FastInteractableRect(const FastRect & _rect)
+{
+	rect = _rect;
 }

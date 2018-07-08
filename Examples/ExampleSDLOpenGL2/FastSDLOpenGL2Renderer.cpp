@@ -77,42 +77,6 @@ void FastImpl::Render()
 	glPushMatrix();
 	glLoadIdentity();
 
-	//std::vector<FastInternal::FastWindow*> windows = FastInternal::GetWindows();
-
-	//for (std::vector<FastInternal::FastWindow*>::iterator it = windows.begin(); it != windows.end(); ++it)
-	//{
-	//	FastInternal::FastWindow* curr_window = (*it);
-
-	//	curr_window->Update();
-
-	//	std::vector<FastInternal::FastDrawShape> shapes = curr_window->GetShapes();
-
-	//	for (std::vector<FastInternal::FastDrawShape>::iterator sh = shapes.begin(); sh != shapes.end(); ++sh)
-	//	{
-	//		FastInternal::FastDrawShape curr_shape = (*sh);
-
-	//		RenderShape(curr_shape);
-	//	}
-
-	//	std::vector<FastInternal::FastElement*> elements = curr_window->GetElements();
-
-	//	for (std::vector<FastInternal::FastElement*>::iterator el = elements.begin(); el != elements.end(); ++el)
-	//	{
-	//		FastInternal::FastElement* curr_element = (*el);
-
-	//		curr_element->Update();
-
-	//		std::vector<FastInternal::FastDrawShape> el_shapes = curr_element->GetShapes();
-
-	//		for (std::vector<FastInternal::FastDrawShape>::iterator sh = el_shapes.begin(); sh != el_shapes.end(); ++sh)
-	//		{
-	//			FastInternal::FastDrawShape curr_shape = (*sh);
-
-	//			RenderShape(curr_shape);
-	//		}
-	//	}
-	//}
-
 	FastVector<FastInternal::FastWindow*> windows = FastInternal::GetWindows();
 
 	int iterations_count = 0;
@@ -183,7 +147,69 @@ void FastImpl::Render()
 
 void FastImpl::ProcessEvent(SDL_Event * ev)
 {
+	switch (ev->type)
+	{
+		//case SDL_MOUSEWHEEL:
+		//{
+		//	if (event->wheel.y > 0)
+		//		g_MouseWheel = 1;
+		//	if (event->wheel.y < 0)
+		//		g_MouseWheel = -1;
+		//	return true;
+		//}
+	case SDL_MOUSEBUTTONDOWN:
+	{
+		if (ev->button.button == SDL_BUTTON_LEFT) FastInternal::SetMouseLeftButton(true);
+		if (ev->button.button == SDL_BUTTON_RIGHT) FastInternal::SetMouseLeftButton(true);;
+		//if (ev->button.button == SDL_BUTTON_MIDDLE) g_MousePressed[2] = true;
+		break;
+	}
 
+	case SDL_MOUSEBUTTONUP:
+	{
+		if (ev->button.button == SDL_BUTTON_LEFT) FastInternal::SetMouseLeftButton(false);
+		if (ev->button.button == SDL_BUTTON_RIGHT) FastInternal::SetMouseLeftButton(false);;
+		//if (ev->button.button == SDL_BUTTON_MIDDLE) g_MousePressed[2] = true;
+		break;
+	}
+
+	//ImGuiIO& io = ImGui::GetIO();
+	//switch (event->type)
+	//{
+	//case SDL_MOUSEWHEEL:
+	//{
+	//	if (event->wheel.y > 0)
+	//		g_MouseWheel = 1;
+	//	if (event->wheel.y < 0)
+	//		g_MouseWheel = -1;
+	//	return true;
+	//}
+	//case SDL_MOUSEBUTTONDOWN:
+	//{
+	//	if (event->button.button == SDL_BUTTON_LEFT) g_MousePressed[0] = true;
+	//	if (event->button.button == SDL_BUTTON_RIGHT) g_MousePressed[1] = true;
+	//	if (event->button.button == SDL_BUTTON_MIDDLE) g_MousePressed[2] = true;
+	//	return true;
+	//}
+	//case SDL_TEXTINPUT:
+	//{
+	//	io.AddInputCharactersUTF8(event->text.text);
+	//	return true;
+	//}
+	//case SDL_KEYDOWN:
+	//case SDL_KEYUP:
+	//{
+	//	int key = event->key.keysym.sym & ~SDLK_SCANCODE_MASK;
+	//	io.KeysDown[key] = (event->type == SDL_KEYDOWN);
+	//	io.KeyShift = ((SDL_GetModState() & KMOD_SHIFT) != 0);
+	//	io.KeyCtrl = ((SDL_GetModState() & KMOD_CTRL) != 0);
+	//	io.KeyAlt = ((SDL_GetModState() & KMOD_ALT) != 0);
+	//	io.KeySuper = ((SDL_GetModState() & KMOD_GUI) != 0);
+	//	return true;
+	//}
+	//}
+	//return false;
+	}
 }
 
 void FastImpl::Quit()
@@ -230,14 +256,14 @@ void FastInternal::RenderShape(FastInternal::FastDrawShape curr_shape)
 
 	glColorPointer(curr_shape.ColoursSize(), GL_FLOAT, sizeof(float) * curr_shape.ColoursSize(), curr_shape.GetColoursPtr());
 
-	if (curr_shape.GetUsesClippingRect())
-	{
-		// Check, has bugs
-		FastRect clipping = curr_shape.GetClippingRect();
-		glScissor(clipping.x, viewport.y - clipping.yh(), clipping.w, viewport.y - clipping.y);
-	}
-	else
-		glScissor(0, 0, viewport.x, viewport.y);
+	////if (curr_shape.GetUsesClippingRect())
+	////{
+	////	// Check, has bugs
+	////	FastRect clipping = curr_shape.GetClippingRect();
+	////	glScissor(clipping.x, viewport.y - clipping.yh(), clipping.w, viewport.y - clipping.y);
+	////}
+	////else
+	glScissor(0, 0, viewport.x, viewport.y);
 
 	glDrawElements(GL_TRIANGLES, curr_shape.GetIndicesCount(), GL_UNSIGNED_INT, curr_shape.GetIndicesPtr());
 
